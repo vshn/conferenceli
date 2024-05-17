@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odoo Contact Form</title>
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+</head>
+
+<body>
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Create Contact</h1>
+        <form hx-post="/submit" hx-target="#modal" hx-swap="innerHTML">
+            <div class="mb-4">
+                <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+                <input type="text" id="name" name="name"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="email" class="block text-gray-700 text-sm font-bold mb-2">E-Mail:</label>
+                <input type="email" id="email" name="email"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="company" class="block text-gray-700 text-sm font-bold mb-2">Company:</label>
+                <input type="text" id="company" name="company"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="country" class="block text-gray-700 text-sm font-bold mb-2">Country:</label>
+                <input type="text" id="country" name="country"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="flex items-center justify-between">
+                <button type="submit"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Submit</button>
+            </div>
+        </form>
+        <div id="modal"></div>
+    </div>
+
+    <script>
+        document.body.addEventListener('htmx:afterRequest', function (evt) {
+            if (!evt.detail.successful) {
+                document.getElementById('modal').innerHTML = evt.detail.xhr.response;
+            }
+        });
+    </script>
+</body>
+
+</html>
