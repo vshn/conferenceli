@@ -14,6 +14,7 @@ ODOO_URL = os.getenv("ODOO_URL")
 ODOO_DB = os.getenv("ODOO_DB")
 ODOO_USERNAME = os.getenv("ODOO_USERNAME")
 ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
+MAILING_LIST_ID = int(os.getenv("MAILING_LIST_ID"))
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -64,8 +65,24 @@ def submit():
             ],
         )
         logging.debug(f"Created Contact ID: {contact_id}")
+
+        # Add the contact to the mailing list
+        models.execute_kw(
+            ODOO_DB,
+            uid,
+            ODOO_PASSWORD,
+            "mailing.list",
+            "write",
+            [[MAILING_LIST_ID], {"contact_ids": [(4, contact_id)]}],
+        )
+        logging.debug(
+            f"Added Contact ID {contact_id} to Mailing List ID {MAILING_LIST_ID}"
+        )
+
         return render_template(
-            "modal.html", status="success", message="Contact created successfully"
+            "modal.html",
+            status="success",
+            message="Contact created and added to mailing list successfully",
         )
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")
