@@ -3,6 +3,7 @@ import xmlrpc.client
 import os
 from dotenv import load_dotenv
 import logging
+from email_validator import validate_email, EmailNotValidError
 
 # Load environment variables
 load_dotenv()
@@ -37,6 +38,12 @@ def submit():
         return render_template(
             "modal.html", status="error", message="Name and Email are required"
         )
+
+    try:
+        # Validate email
+        validate_email(email)
+    except EmailNotValidError as e:
+        return render_template("modal.html", status="error", message=str(e))
 
     try:
         # Authenticate with Odoo
