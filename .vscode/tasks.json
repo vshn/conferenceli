@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Flask",
+            "type": "shell",
+            "command": "poetry run flask run --reload",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": " *Running on http://127.0.0.1:5000/",
+                        "endsPattern": " *Running on http://127.0.0.1:5000/"
+                    }
+                }
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/contactform"
+            }
+        },
+        {
+            "label": "Stop Flask",
+            "type": "shell",
+            "command": "pkill -f flask"
+        }
+    ]
+}
