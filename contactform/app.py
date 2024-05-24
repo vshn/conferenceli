@@ -116,7 +116,7 @@ def index():
                 backend_class=BrotherQLBackendNetwork,
             )
 
-        flash("Thanks for submitting")
+        flash("Thanks for submitting", "success")
         return redirect(url_for("index"))
 
     return render_template(
