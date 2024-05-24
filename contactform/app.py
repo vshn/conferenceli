@@ -8,11 +8,29 @@ from flask_bootstrap import Bootstrap5
 from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 
+from brother_ql_web.configuration import (
+    Configuration,
+    ServerConfiguration,
+    PrinterConfiguration,
+    Font,
+    LabelConfiguration,
+    WebsiteConfiguration,
+)
+from brother_ql_web.labels import (
+    LabelParameters,
+    create_label_image,
+    image_to_png_bytes,
+    generate_label,
+    print_label,
+)
+from brother_ql.backends.network import BrotherQLBackendNetwork
+
 from dotenv import load_dotenv
 
 # Load configuration
 load_dotenv()
 FLASK_APP_SECRET_KEY = os.getenv("FLASK_APP_SECRET_KEY")
+LOG_LEVEL = os.getenv("LOG_LEVEL")
 ODOO_URL = os.getenv("ODOO_URL")
 ODOO_DB = os.getenv("ODOO_DB")
 ODOO_USERNAME = os.getenv("ODOO_USERNAME")
@@ -31,6 +49,24 @@ logging.basicConfig(level=logging.DEBUG)
 common = xmlrpc.client.ServerProxy(f"{ODOO_URL}/xmlrpc/2/common")
 uid = common.authenticate(ODOO_DB, ODOO_USERNAME, ODOO_PASSWORD, {})
 models = xmlrpc.client.ServerProxy(f"{ODOO_URL}/xmlrpc/2/object")
+
+# Configure printer
+printer_config = Configuration(
+    server=ServerConfiguration,
+    printer=PrinterConfiguration(model="QL-820NWB", printer="tcp://192.168.25.140"),
+    label=LabelConfiguration(
+        default_size="54",
+        default_orientation="standard",
+        default_font_size=70,
+        default_fonts=[
+            Font(family="Minion Pro", style="Semibold"),
+            Font(family="Linux Libertine", style="Regular"),
+            Font(family="DejaVu Serif", style="Book"),
+        ],
+        default_font=Font(family="DejaVu Serif", style="Book"),
+    ),
+    website=WebsiteConfiguration,
+)
 
 
 def odoo_countries():
@@ -105,6 +141,25 @@ def index():
             ],
         )
         logging.debug(f"Created Lead ID: {lead_id}")
+
+        label_text = f"Hello \n{form.name.data}"
+
+        parameters = LabelParameters(
+            configuration=printer_config, text=label_text, label_size="54"
+        )
+        qlr = generate_label(
+            parameters=parameters,
+            configuration=printer_config,
+            save_image_to="sample-out.png" if LOG_LEVEL == "DEBUG" else None,
+        )
+
+        print_label(
+            parameters=parameters,
+            qlr=qlr,
+            configuration=printer_config,
+            backend_class=BrotherQLBackendNetwork,
+        )
+
         flash("Thanks for submitting")
         return redirect(url_for("index"))
 

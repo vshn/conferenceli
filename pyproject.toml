@@ -13,6 +13,7 @@ python-dotenv = "^1.0.1"
 bootstrap-flask = "^2.4.0"
 flask-wtf = "^1.2.1"
 email-validator = "^2.1.1"
+brother-ql-web = "^0.2.1"
 
 
 [tool.poetry.group.dev.dependencies]
