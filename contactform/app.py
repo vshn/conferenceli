@@ -65,6 +65,7 @@ class LeadForm(FlaskForm):
     job_position = StringField("Job Position")
     phone = TelField()
     country = SelectField("Country", choices=load_countries(odoo_client))
+    notes = TextAreaField("Notes")
     submit = SubmitField()
 
 
@@ -83,9 +84,10 @@ def index():
                 "partner_name": form.company.data,
                 "country_id": form.country.data,
                 "phone": form.phone.data,
+                "description": form.notes.data,
                 "campaign_id": config.CAMPAIGN_ID,
                 "source_id": config.SOURCE_ID,
-                "tag_ids": [(4, config.ODOO_TAG_ID)],
+                "tag_ids": [(4, config.TAG_ID)],
             },
         )
         logging.debug(f"Created Lead ID: {lead_id}")

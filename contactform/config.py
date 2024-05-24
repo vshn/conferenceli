@@ -17,9 +17,10 @@ class Config:
         self.ODOO_DB = self.get_env_var("ODOO_DB")
         self.ODOO_USERNAME = self.get_env_var("ODOO_USERNAME")
         self.ODOO_PASSWORD = self.get_env_var("ODOO_PASSWORD")
-        self.ODOO_TAG_ID = self.get_env_int_var("ODOO_TAG_ID")
+        self.TAG_NAME = self.get_env_var("TAG_NAME")
         self.CAMPAIGN_NAME = self.get_env_var("CAMPAIGN_NAME")
         self.SOURCE_NAME = self.get_env_var("SOURCE_NAME")
+        self.TAG_ID = None
         self.CAMPAIGN_ID = None
         self.SOURCE_ID = None
 
@@ -41,6 +42,7 @@ class Config:
             "utm.campaign", self.CAMPAIGN_NAME
         )
         self.SOURCE_ID = odoo_client.find_id_by_name("utm.source", self.SOURCE_NAME)
+        self.TAG_ID = odoo_client.find_id_by_name("crm.tag", self.TAG_NAME)
 
 
 # Set up logging
