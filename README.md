@@ -13,9 +13,12 @@
 
 ### Deployment
 
-* [ ] Dockerfile
 * [ ] Pipeline
 * [ ] Raspi?
 * [ ] Touchscreen?
 * [ ] Ingress and QR scan?
 * [ ] Booth Network?
+
+### Later
+
+* [ ] Replace Flask Run by something like Waitress

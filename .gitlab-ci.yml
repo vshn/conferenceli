@@ -8,7 +8,6 @@ stages:
 
 variables:
   REGISTRY: registry.vshn.net
-  IMAGE_NAME: botthit
 
 .dockerbuild:
   before_script:
@@ -39,12 +38,13 @@ variables:
   - poetry.lock
   - pyproject.toml
   - contactform/**/*
+  - .gitlab-ci.yml
 
 build:latest:
   extends: .dockerbuild
   stage: build
   variables:
-    IMAGE_NAME: $IMAGE_NAME
+    IMAGE_NAME: boothit
     IMAGE_TAG: latest
     PREVIOUS_IMAGE_TAG: latest
   rules:
