@@ -1,66 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odoo Contact Form</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.6.1"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-</head>
+{% from 'bootstrap5/form.html' import render_form, render_field, render_form_row %}
 
-<body>
-    <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4">Create Lead</h1>
-        <form hx-post="/submit" hx-target="#modal" hx-swap="innerHTML">
-            <div class="mb-4">
-                <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
-                <input type="text" id="name" name="name"
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            </div>
-            <div class="mb-4">
-                <label for="email" class="block text-gray-700 text-sm font-bold mb-2">E-Mail:</label>
-                <input type="email" id="email" name="email"
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            </div>
-            <div class="mb-4">
-                <label for="company" class="block text-gray-700 text-sm font-bold mb-2">Company:</label>
-                <input type="text" id="company" name="company"
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            </div>
-            <div class="mb-4">
-                <label for="country" class="block text-gray-700 text-sm font-bold mb-2">Country:</label>
-                <select id="country" name="country"
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    <optgroup label="Preferred">
-                        {% for country in countries if country.name in preferred_countries %}
-                        <option value="{{ country.name }}">{{ country.name }}</option>
-                        {% endfor %}
-                    </optgroup>
-                    <option disabled>──────────────────────</option>
-                    <optgroup label="Others">
-                        {% for country in countries if country.name not in preferred_countries %}
-                        <option value="{{ country.name }}">{{ country.name }}</option>
-                        {% endfor %}
-                    </optgroup>
-                </select>
-            </div>
-            <div class="flex items-center justify-between">
-                <button type="submit"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Submit</button>
-            </div>
-        </form>
-        <div id="modal"></div>
-    </div>
-
-    <script>
-        $(document).ready(function () {
-            $('#country').select2();
-        });
-    </script>
-</body>
-
-</html>
+{% block content %}
+{{ render_form(form) }}
+{% endblock %}

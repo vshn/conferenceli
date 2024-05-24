@@ -1,23 +1,31 @@
-from flask import Flask, render_template, request, jsonify
-import xmlrpc.client
 import os
-from dotenv import load_dotenv
 import logging
+import xmlrpc.client
+
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask_wtf import FlaskForm, CSRFProtect
+from flask_bootstrap import Bootstrap5
+from wtforms.validators import DataRequired, Email
+from wtforms.fields import *
+
 from email_validator import validate_email, EmailNotValidError
+from dotenv import load_dotenv
 
-# Load environment variables
+# Load configuration
 load_dotenv()
-
-app = Flask(__name__)
-
-# Odoo settings
+FLASK_APP_SECRET_KEY = os.getenv("FLASK_APP_SECRET_KEY")
 ODOO_URL = os.getenv("ODOO_URL")
 ODOO_DB = os.getenv("ODOO_DB")
 ODOO_USERNAME = os.getenv("ODOO_USERNAME")
 ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
 ODOO_TAG_ID = int(os.getenv("ODOO_TAG_ID"))
 
-# Configure logging
+app = Flask(__name__)
+app.secret_key = FLASK_APP_SECRET_KEY
+csrf = CSRFProtect(app)
+bootstrap = Bootstrap5(app)
+
+
 logging.basicConfig(level=logging.DEBUG)
 
 # Authenticate with Odoo
@@ -26,10 +34,9 @@ uid = common.authenticate(ODOO_DB, ODOO_USERNAME, ODOO_PASSWORD, {})
 models = xmlrpc.client.ServerProxy(f"{ODOO_URL}/xmlrpc/2/object")
 
 
-@app.route("/")
-def index():
-    # Fetch country data from Odoo
-    countries = models.execute_kw(
+def odoo_countries():
+    # Load countries from Odoo for selection
+    odoo_countries = models.execute_kw(
         ODOO_DB,
         uid,
         ODOO_PASSWORD,
@@ -38,53 +45,47 @@ def index():
         [[("id", "!=", 0)]],
         {"fields": ["id", "name"], "order": "name"},
     )
-    # Sort countries for the dropdown
+
     preferred_countries = ["Switzerland", "Germany", "Austria", "France", "Italy"]
-    sorted_countries = sorted(
-        countries, key=lambda x: (x["name"] not in preferred_countries, x["name"])
-    )
 
-    return render_template(
-        "form.html", countries=sorted_countries, preferred_countries=preferred_countries
-    )
+    # Convert the result to a list of tuples
+    countries = [(str(item["id"]), item["name"]) for item in odoo_countries]
+
+    # Separate preferred and other countries
+    preferred = [(cid, name) for cid, name in countries if name in preferred_countries]
+    others = [(cid, name) for cid, name in countries if name not in preferred_countries]
+
+    # Sort the preferred countries by the order in preferred_countries list
+    preferred_sorted = sorted(preferred, key=lambda x: preferred_countries.index(x[1]))
+
+    # Sort the other countries alphabetically by name
+    others_sorted = sorted(others, key=lambda x: x[1])
+
+    # Combine the preferred and other countries
+    sorted_countries = preferred_sorted + others_sorted
+
+    return sorted_countries
 
 
-@app.route("/submit", methods=["POST"])
-def submit():
-    name = request.form.get("name")
-    email = request.form.get("email")
-    company = request.form.get("company")
-    country_name = request.form.get("country")
+class LeadForm(FlaskForm):
+    name = StringField("Name", validators=[DataRequired()])
+    email = EmailField("E-Mail", validators=[DataRequired(), Email()])
+    company = StringField("Company")
+    job_position = StringField("Job Position")
+    phone = TelField()
+    # TODO visually separate preffered countries from others
+    # TODO make the field searchable
+    country = SelectField("Country", choices=odoo_countries())
+    submit = SubmitField()
 
-    # Validate inputs
-    if not name or not email:
-        return render_template(
-            "modal.html", status="error", message="Name and Email are required"
-        )
 
-    try:
-        # Validate email
-        validate_email(email)
-    except EmailNotValidError as e:
-        return render_template("modal.html", status="error", message=str(e))
+@app.route("/", methods=["GET", "POST"])
+def index():
+    form = LeadForm()
 
-    try:
-        # Find the country ID
-        country = models.execute_kw(
-            ODOO_DB,
-            uid,
-            ODOO_PASSWORD,
-            "res.country",
-            "search_read",
-            [[("name", "=", country_name)]],
-            {"fields": ["id"], "limit": 1},
-        )
-        if not country:
-            raise ValueError(f"Country '{country_name}' not found")
-
-        country_id = country[0]["id"]
-
+    if form.validate_on_submit():
         # Create a new lead in Odoo
+        # TODO add campaign and source - configurable - lookup IDs before
         lead_id = models.execute_kw(
             ODOO_DB,
             uid,
@@ -93,24 +94,25 @@ def submit():
             "create",
             [
                 {
-                    "name": name,
-                    "email_from": email,
-                    "partner_name": company,
-                    "country_id": country_id,
+                    "name": f"Event Lead: {form.name.data}",
+                    "contact_name": form.name.data,
+                    "email_from": form.email.data,
+                    "function": form.job_position.data,
+                    "partner_name": form.company.data,
+                    "country_id": form.country.data,
+                    "phone": form.phone.data,
                     "tag_ids": [(4, ODOO_TAG_ID)],
                 }
             ],
         )
         logging.debug(f"Created Lead ID: {lead_id}")
+        flash("Thanks for submitting")
+        return redirect(url_for("index"))
 
-        return render_template(
-            "modal.html",
-            status="success",
-            message="Lead created",
-        )
-    except Exception as e:
-        logging.error(f"Error occurred: {str(e)}")
-        return render_template("modal.html", status="error", message=str(e))
+    return render_template(
+        "form.html",
+        form=form,
+    )
 
 
 if __name__ == "__main__":
