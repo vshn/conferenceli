@@ -51,6 +51,10 @@ def load_countries(odoo_client):
 
     preferred_sorted = sorted(preferred, key=lambda x: preferred_countries.index(x[1]))
     others_sorted = sorted(others, key=lambda x: x[1])
-    sorted_countries = preferred_sorted + others_sorted
+
+    # Add a separator between preferred countries and others
+    separator = [("", "---", {"disabled": True})]
+
+    sorted_countries = preferred_sorted + separator + others_sorted
 
     return sorted_countries
