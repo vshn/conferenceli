@@ -28,19 +28,24 @@ from odoo_client import OdooClient, load_countries
 # Load configuration
 load_dotenv()
 FLASK_APP_SECRET_KEY = os.getenv("FLASK_APP_SECRET_KEY")
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 ODOO_URL = os.getenv("ODOO_URL")
 ODOO_DB = os.getenv("ODOO_DB")
 ODOO_USERNAME = os.getenv("ODOO_USERNAME")
 ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
 ODOO_TAG_ID = int(os.getenv("ODOO_TAG_ID"))
 
+# Set up logging
+logging.basicConfig(
+    level=logging.getLevelName(LOG_LEVEL),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
 app = Flask(__name__)
 app.secret_key = FLASK_APP_SECRET_KEY
 csrf = CSRFProtect(app)
 bootstrap = Bootstrap5(app)
-
-logging.basicConfig(level=logging.DEBUG)
 
 # Initialize Odoo client
 odoo_client = OdooClient(ODOO_URL, ODOO_DB, ODOO_USERNAME, ODOO_PASSWORD)
@@ -105,12 +110,12 @@ def index():
             save_image_to="sample-out.png" if LOG_LEVEL == "DEBUG" else None,
         )
 
-        # print_label(
-        #     parameters=parameters,
-        #     qlr=qlr,
-        #     configuration=printer_config,
-        #     backend_class=BrotherQLBackendNetwork,
-        # )
+        print_label(
+            parameters=parameters,
+            qlr=qlr,
+            configuration=printer_config,
+            backend_class=BrotherQLBackendNetwork,
+        )
 
         flash("Thanks for submitting")
         return redirect(url_for("index"))
@@ -122,4 +127,5 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    flask_debug = True if LOG_LEVEL == "DEBUG" else False
+    app.run(debug=flask_debug)
