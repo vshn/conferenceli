@@ -13,7 +13,6 @@
 
 ### Deployment
 
-* [ ] Pipeline
 * [ ] Raspi?
 * [ ] Touchscreen?
 * [ ] Ingress and QR scan?
