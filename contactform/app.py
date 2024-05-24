@@ -1,4 +1,3 @@
-import os
 import logging
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
 from flask_wtf import FlaskForm, CSRFProtect
@@ -6,7 +5,6 @@ from flask_bootstrap import Bootstrap5
 from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 
-from dotenv import load_dotenv
 from brother_ql_web.configuration import (
     Configuration,
     ServerConfiguration,
@@ -24,31 +22,22 @@ from brother_ql_web.labels import (
 )
 from brother_ql.backends.network import BrotherQLBackendNetwork
 from odoo_client import OdooClient, load_countries
-
-# Load configuration
-load_dotenv()
-FLASK_APP_SECRET_KEY = os.getenv("FLASK_APP_SECRET_KEY")
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-ODOO_URL = os.getenv("ODOO_URL")
-ODOO_DB = os.getenv("ODOO_DB")
-ODOO_USERNAME = os.getenv("ODOO_USERNAME")
-ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
-ODOO_TAG_ID = int(os.getenv("ODOO_TAG_ID"))
-
-# Set up logging
-logging.basicConfig(
-    level=logging.getLevelName(LOG_LEVEL),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+from config import config, ConfigError
 
 app = Flask(__name__)
-app.secret_key = FLASK_APP_SECRET_KEY
+app.secret_key = config.FLASK_APP_SECRET_KEY
 csrf = CSRFProtect(app)
 bootstrap = Bootstrap5(app)
 
-# Initialize Odoo client
-odoo_client = OdooClient(ODOO_URL, ODOO_DB, ODOO_USERNAME, ODOO_PASSWORD)
+# Initialize Odoo client and look up campaign and source IDs
+odoo_client = OdooClient(
+    config.ODOO_URL, config.ODOO_DB, config.ODOO_USERNAME, config.ODOO_PASSWORD
+)
+try:
+    config.lookup_ids(odoo_client)
+except ValueError as e:
+    logging.error(e)
+    exit(1)
 
 # Configure printer
 printer_config = Configuration(
@@ -94,7 +83,9 @@ def index():
                 "partner_name": form.company.data,
                 "country_id": form.country.data,
                 "phone": form.phone.data,
-                "tag_ids": [(4, ODOO_TAG_ID)],
+                "campaign_id": config.CAMPAIGN_ID,
+                "source_id": config.SOURCE_ID,
+                "tag_ids": [(4, config.ODOO_TAG_ID)],
             },
         )
         logging.debug(f"Created Lead ID: {lead_id}")
@@ -107,15 +98,16 @@ def index():
         qlr = generate_label(
             parameters=parameters,
             configuration=printer_config,
-            save_image_to="sample-out.png" if LOG_LEVEL == "DEBUG" else None,
+            save_image_to="sample-out.png" if config.LOG_LEVEL == "DEBUG" else None,
         )
 
-        print_label(
-            parameters=parameters,
-            qlr=qlr,
-            configuration=printer_config,
-            backend_class=BrotherQLBackendNetwork,
-        )
+        if config.LOG_LEVEL != "DEBUG":
+            print_label(
+                parameters=parameters,
+                qlr=qlr,
+                configuration=printer_config,
+                backend_class=BrotherQLBackendNetwork,
+            )
 
         flash("Thanks for submitting")
         return redirect(url_for("index"))
@@ -127,5 +119,8 @@ def index():
 
 
 if __name__ == "__main__":
-    flask_debug = True if LOG_LEVEL == "DEBUG" else False
-    app.run(debug=flask_debug)
+    flask_debug = True if config.LOG_LEVEL == "DEBUG" else False
+    try:
+        app.run(debug=flask_debug)
+    except ConfigError as e:
+        logging.error(e)

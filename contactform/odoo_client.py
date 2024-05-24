@@ -1,4 +1,3 @@
-import os
 import xmlrpc.client
 
 
@@ -15,7 +14,7 @@ class OdooClient:
     def authenticate(self):
         return self.common.authenticate(self.db, self.username, self.password, {})
 
-    def search_read(self, model, domain, fields, order=None):
+    def search_read(self, model, domain, fields, order="id"):
         return self.models.execute_kw(
             self.db,
             self.uid,
@@ -30,6 +29,13 @@ class OdooClient:
         return self.models.execute_kw(
             self.db, self.uid, self.password, model, "create", [data]
         )
+
+    def find_id_by_name(self, model, name):
+        records = self.search_read(model, [("name", "=", name)], ["id"])
+        if records:
+            return records[0]["id"]
+        else:
+            raise ValueError(f"No record found for name '{name}' in model '{model}'.")
 
 
 def load_countries(odoo_client):
