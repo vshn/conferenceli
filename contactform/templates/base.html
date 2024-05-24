@@ -8,29 +8,16 @@
     <title>VSHN Conference Booth Hit</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
     {{ bootstrap.load_css() }}
-    <style>
-        pre {
-            background: #ddd;
-            padding: 10px;
-        }
-
-        h2 {
-            margin-top: 20px;
-        }
-
-        footer {
-            margin: 20px;
-        }
-    </style>
 </head>
 
 <body>
     <main class="container">
         {{ render_messages(container=False, dismissible=True, dismiss_animate=True) }}
+        <img src="{{ url_for('static', filename='images/logo.png') }}" class="img-fluid mx-auto d-block w-50 m-5">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="text-center">
+    <footer class="text-center m-5">
         {% block footer %}
         <small> &copy;
             <script>document.write(new Date().getFullYear())</script> <a href="https://www.vshn.ch">VSHN</a>

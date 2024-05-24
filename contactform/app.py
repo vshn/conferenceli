@@ -29,6 +29,11 @@ app.secret_key = config.FLASK_APP_SECRET_KEY
 csrf = CSRFProtect(app)
 bootstrap = Bootstrap5(app)
 
+# Basic styling
+app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "vapor"
+app.config["BOOTSTRAP_BTN_SIZE"] = "lg"
+app.config["BOOTSTRAP_SERVE_LOCAL"] = True
+
 # Initialize Odoo client and look up campaign and source IDs
 odoo_client = OdooClient(
     config.ODOO_URL, config.ODOO_DB, config.ODOO_USERNAME, config.ODOO_PASSWORD
