@@ -1,4 +1,5 @@
 import xmlrpc.client
+import logging
 
 
 class OdooClient:
@@ -12,6 +13,7 @@ class OdooClient:
         self.uid = self.authenticate()
 
     def authenticate(self):
+        logging.info(f"Authenticating against {self.url} as {self.username}")
         return self.common.authenticate(self.db, self.username, self.password, {})
 
     def search_read(self, model, domain, fields, order="id"):
@@ -31,6 +33,7 @@ class OdooClient:
         )
 
     def find_id_by_name(self, model, name):
+        logging.debug(f"Searching for id of '{name}' in model '{model}'")
         records = self.search_read(model, [("name", "=", name)], ["id"])
         if records:
             return records[0]["id"]

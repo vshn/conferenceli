@@ -20,12 +20,12 @@ FROM python:3.12-bookworm as runtime
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
-    STATIC_FILES_DIR="/app/static/" \
     FLASK_APP="contactform/app.py" \
     FLASK_ENV="production" \
     FLASK_DEBUG="0" \
     FLASK_RUN_HOST="0.0.0.0" \
-    FLASK_RUN_PORT="8000"
+    FLASK_RUN_PORT="8000" \
+    PYTHONPATH="/contactform"
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 

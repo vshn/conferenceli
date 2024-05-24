@@ -28,7 +28,7 @@ class Config:
         value = os.getenv(name, default)
         if value is None:
             raise ConfigError(f"Environment variable {name} is required but not set.")
-        return value
+        return value.replace('"', "")
 
     def get_env_int_var(self, name, default=None):
         value = self.get_env_var(name, default)
