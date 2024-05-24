@@ -1,0 +1,53 @@
+image: docker:latest
+services:
+  - name: docker:dind
+    command: ["--mtu=1450"]
+
+stages:
+  - build
+
+variables:
+  REGISTRY: registry.vshn.net
+  IMAGE_NAME: botthit
+
+.dockerbuild:
+  before_script:
+    - until docker info; do sleep 5; done
+    - docker info
+    - echo $CI_JOB_TOKEN | docker login -u gitlab-ci-token --password-stdin $REGISTRY
+  variables:
+    DOCKERFILE: Dockerfile
+    BUILD_ARGS: ""
+    BUILD_ARG_FILES: ""
+  script:
+    - echo "building image ${REGISTRY}/${CI_PROJECT_PATH}/${IMAGE_NAME}:${IMAGE_TAG}"
+    - docker pull ${REGISTRY}/${CI_PROJECT_PATH}/${IMAGE_NAME}:${PREVIOUS_IMAGE_TAG} || true
+    - |
+      docker build \
+      --cache-from ${REGISTRY}/${CI_PROJECT_PATH}/${IMAGE_NAME}:${PREVIOUS_IMAGE_TAG} \
+      --tag ${REGISTRY}/${CI_PROJECT_PATH}/${IMAGE_NAME}:${IMAGE_TAG} \
+      ${BUILD_ARGS} \
+      --file ${DOCKERFILE} \
+      .
+    - docker push ${REGISTRY}/${CI_PROJECT_PATH}/${IMAGE_NAME}:${IMAGE_TAG}
+  tags:
+    - dockerbuild_sks
+
+# Trigger builds when something changes in these files or folders
+.build-changes: &build-changes
+  - Dockerfile
+  - poetry.lock
+  - pyproject.toml
+  - contactform/**/*
+
+build:latest:
+  extends: .dockerbuild
+  stage: build
+  variables:
+    IMAGE_NAME: $IMAGE_NAME
+    IMAGE_TAG: latest
+    PREVIOUS_IMAGE_TAG: latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes: *build-changes
+
