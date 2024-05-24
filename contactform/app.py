@@ -8,7 +8,6 @@ from flask_bootstrap import Bootstrap5
 from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 
-from email_validator import validate_email, EmailNotValidError
 from dotenv import load_dotenv
 
 # Load configuration
