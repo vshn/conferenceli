@@ -4,8 +4,8 @@
 
 ### Important stuff
 
-* [ ] Label printer text: APPUiO Cloud voucher
 * [ ] Customize what is printed - v1 maybe only name for raffle?
+* [ ] Admin for campaign, save in file
 
 ### Visual stuff
 
@@ -20,3 +20,8 @@
 * [ ] Booth Network?
 * [ ] Push to GitHub
 * [ ] GitHub Action, image at ghcr.io
+
+## TODO Pod status
+
+* [ ] initial work to show pod status - maybe on web interface?
+* [ ] blinkstick!

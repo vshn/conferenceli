@@ -82,34 +82,41 @@ def index():
     if form.validate_on_submit():
         # Append data to CSV file
         csv_data = {
-            "name": form.name.data,
-            "email": form.email.data,
-            "job_position": form.job_position.data,
-            "company": form.company.data,
-            "country": form.country.data,
-            "phone": form.phone.data,
-            "notes": form.notes.data,
+            "Opportunity": f"Event Lead: {form.name.data}",
+            "Contact Name": form.name.data,
+            "Email": form.email.data,
+            "Job Position": form.job_position.data,
+            "Company Name": form.company.data,
+            "Country": form.country.data,
+            "Phone": form.phone.data,
+            "Notes": form.notes.data,
+            "Tags": config.TAG_NAME,
+            "Campaign": config.CAMPAIGN_NAME,
+            "Source": config.SOURCE_NAME,
         }
         append_to_csv(csv_data, config.CSV_FILE_PATH)
 
         # Create lead in Odoo
-        lead_id = odoo_client.create(
-            "crm.lead",
-            {
-                "name": f"Event Lead: {form.name.data}",
-                "contact_name": form.name.data,
-                "email_from": form.email.data,
-                "function": form.job_position.data,
-                "partner_name": form.company.data,
-                "country_id": form.country.data,
-                "phone": form.phone.data,
-                "description": form.notes.data,
-                "campaign_id": config.CAMPAIGN_ID,
-                "source_id": config.SOURCE_ID,
-                "tag_ids": [(4, config.TAG_ID)],
-            },
-        )
-        logging.debug(f"Created Lead ID: {lead_id}")
+        try:
+            lead_id = odoo_client.create(
+                "crm.lead",
+                {
+                    "name": f"Event Lead: {form.name.data}",
+                    "contact_name": form.name.data,
+                    "email_from": form.email.data,
+                    "function": form.job_position.data,
+                    "partner_name": form.company.data,
+                    "country_id": form.country.data,
+                    "phone": form.phone.data,
+                    "description": form.notes.data,
+                    "campaign_id": config.CAMPAIGN_ID,
+                    "source_id": config.SOURCE_ID,
+                    "tag_ids": [(4, config.TAG_ID)],
+                },
+            )
+            logging.debug(f"Created Lead ID: {lead_id}")
+        except Exception as e:
+            logging.error(f"Couldn't create Lead in Odoo: {e}")
 
         label_text = f"Hello \n{form.name.data}"
 

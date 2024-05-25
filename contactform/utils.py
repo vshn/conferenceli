@@ -7,13 +7,17 @@ def append_to_csv(data, file_path):
     file_exists = os.path.isfile(file_path)
     with open(file_path, mode="a", newline="") as csv_file:
         fieldnames = [
-            "name",
-            "email",
-            "job_position",
-            "company",
-            "country",
-            "phone",
-            "notes",
+            "Opportunity",
+            "Contact Name",
+            "Email",
+            "Job Position",
+            "Company Name",
+            "Country",
+            "Phone",
+            "Notes",
+            "Tags",
+            "Campaign",
+            "Source",
         ]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
