@@ -71,7 +71,7 @@ class LeadForm(FlaskForm):
     job_position = StringField("Job Position")
     phone = TelField()
     country = SelectField("Country", choices=load_countries(odoo_client))
-    notes = TextAreaField("Notes")
+    notes = TextAreaField("What can VSHN help you with?")
     submit = SubmitField()
 
 
