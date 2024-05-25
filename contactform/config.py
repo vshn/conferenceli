@@ -14,6 +14,7 @@ class Config:
         load_dotenv()
         self.FLASK_APP_SECRET_KEY = self.get_env_var("FLASK_APP_SECRET_KEY")
         self.LOG_LEVEL = self.get_env_var("LOG_LEVEL", "INFO").upper()
+        self.PRINTER_IP = self.get_env_var("PRINTER_IP")
         self.ODOO_URL = self.get_env_var("ODOO_URL")
         self.ODOO_DB = self.get_env_var("ODOO_DB")
         self.ODOO_USERNAME = self.get_env_var("ODOO_USERNAME")
@@ -22,8 +23,12 @@ class Config:
         self.CAMPAIGN_NAME = self.get_env_var("CAMPAIGN_NAME")
         self.SOURCE_NAME = self.get_env_var("SOURCE_NAME")
         self.CSV_FILE_PATH = self.get_env_var("CSV_FILE_PATH")
+        self.LABEL_HEADER = self.get_env_var("LABEL_HEADER", "Welcome")
         self.PRINTING_ENABLED = (
             self.get_env_var("PRINTING_ENABLED", "true").lower() == "true"
+        )
+        self.ODOO_CREATELEAD_ENABLED = (
+            self.get_env_var("ODOO_CREATELEAD_ENABLED", "true").lower() == "true"
         )
         self.CONFIG_FILE_PATH = self.get_env_var("CONFIG_FILE_PATH", "config.json")
         self.BASIC_AUTH_USERNAME = self.get_env_var("BASIC_AUTH_USERNAME")
@@ -60,8 +65,12 @@ class Config:
                 self.CAMPAIGN_NAME = config_data.get(
                     "CAMPAIGN_NAME", self.CAMPAIGN_NAME
                 )
+                self.LABEL_HEADER = config_data.get("LABEL_HEADER", self.LABEL_HEADER)
                 self.PRINTING_ENABLED = config_data.get(
                     "PRINTING_ENABLED", self.PRINTING_ENABLED
+                )
+                self.ODOO_CREATELEAD_ENABLED = config_data.get(
+                    "ODOO_CREATELEAD_ENABLED", self.ODOO_CREATELEAD_ENABLED
                 )
 
 
@@ -69,6 +78,8 @@ def save_config(config):
     config_data = {
         "CAMPAIGN_NAME": config.CAMPAIGN_NAME,
         "PRINTING_ENABLED": config.PRINTING_ENABLED,
+        "ODOO_CREATELEAD_ENABLED": config.ODOO_CREATELEAD_ENABLED,
+        "LABEL_HEADER": config.LABEL_HEADER,
     }
     with open(config.CONFIG_FILE_PATH, "w") as file:
         json.dump(config_data, file, indent=4)
