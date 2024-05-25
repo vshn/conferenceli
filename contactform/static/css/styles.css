@@ -1,3 +1,12 @@
-@import "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css";
+.bg-image {
+    background-image: url('/static/images/background.webp');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+}
 
-/* Add any additional custom styles here */
+@media (max-width: 767px) {
+    .bg-image {
+        background-image: url('/static/images/background-mobile.webp');
+    }
+}

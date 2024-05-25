@@ -30,7 +30,7 @@ csrf = CSRFProtect(app)
 bootstrap = Bootstrap5(app)
 
 # Basic styling
-app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "vapor"
+app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "sandstone"
 app.config["BOOTSTRAP_BTN_SIZE"] = "lg"
 app.config["BOOTSTRAP_SERVE_LOCAL"] = True
 
@@ -64,8 +64,8 @@ printer_config = Configuration(
 
 
 class LeadForm(FlaskForm):
-    name = StringField("Name", validators=[DataRequired()])
-    email = EmailField("E-Mail", validators=[DataRequired(), Email()])
+    name = StringField("Name *", validators=[DataRequired()])
+    email = EmailField("E-Mail *", validators=[DataRequired(), Email()])
     company = StringField("Company")
     job_position = StringField("Job Position")
     phone = TelField()

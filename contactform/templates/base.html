@@ -8,9 +8,10 @@
     <title>VSHN Conference Booth Hit</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
     {{ bootstrap.load_css() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 
-<body>
+<body class="bg-image">
     <main class="container">
         {{ render_messages(container=False, dismissible=True, dismiss_animate=True) }}
         <img src="{{ url_for('static', filename='images/logo.png') }}" class="img-fluid mx-auto d-block w-50 m-5">

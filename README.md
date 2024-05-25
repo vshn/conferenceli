@@ -13,7 +13,10 @@
 
 ### Deployment
 
-* [ ] Raspi?
+* [ ] Raspi? Reterminal?
+* [ ] 4G USB Stick
 * [ ] Touchscreen?
-* [ ] Ingress and QR scan?
+* [ ] Ingress and QR scan? With [frp](https://github.com/fatedier/frp)
 * [ ] Booth Network?
+* [ ] Push to GitHub
+* [ ] GitHub Action, image at ghcr.io
