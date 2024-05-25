@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 from dotenv import load_dotenv
 from odoo_client import OdooClient
 
@@ -21,9 +22,16 @@ class Config:
         self.CAMPAIGN_NAME = self.get_env_var("CAMPAIGN_NAME")
         self.SOURCE_NAME = self.get_env_var("SOURCE_NAME")
         self.CSV_FILE_PATH = self.get_env_var("CSV_FILE_PATH")
+        self.PRINTING_ENABLED = (
+            self.get_env_var("PRINTING_ENABLED", "true").lower() == "true"
+        )
+        self.CONFIG_FILE_PATH = self.get_env_var("CONFIG_FILE_PATH", "config.json")
+        self.BASIC_AUTH_USERNAME = self.get_env_var("BASIC_AUTH_USERNAME")
+        self.BASIC_AUTH_PASSWORD = self.get_env_var("BASIC_AUTH_PASSWORD")
         self.TAG_ID = None
         self.CAMPAIGN_ID = None
         self.SOURCE_ID = None
+        self.load_config_file()
 
     def get_env_var(self, name, default=None):
         value = os.getenv(name, default)
@@ -44,6 +52,26 @@ class Config:
         )
         self.SOURCE_ID = odoo_client.find_id_by_name("utm.source", self.SOURCE_NAME)
         self.TAG_ID = odoo_client.find_id_by_name("crm.tag", self.TAG_NAME)
+
+    def load_config_file(self):
+        if os.path.exists(self.CONFIG_FILE_PATH):
+            with open(self.CONFIG_FILE_PATH, "r") as file:
+                config_data = json.load(file)
+                self.CAMPAIGN_NAME = config_data.get(
+                    "CAMPAIGN_NAME", self.CAMPAIGN_NAME
+                )
+                self.PRINTING_ENABLED = config_data.get(
+                    "PRINTING_ENABLED", self.PRINTING_ENABLED
+                )
+
+
+def save_config(config):
+    config_data = {
+        "CAMPAIGN_NAME": config.CAMPAIGN_NAME,
+        "PRINTING_ENABLED": config.PRINTING_ENABLED,
+    }
+    with open(config.CONFIG_FILE_PATH, "w") as file:
+        json.dump(config_data, file, indent=4)
 
 
 # Set up logging

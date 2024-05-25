@@ -1,9 +1,19 @@
 import logging
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
-from flask_wtf import FlaskForm, CSRFProtect
-from flask_bootstrap import Bootstrap5
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    flash,
+    redirect,
+    url_for,
+    Response,
+)
 from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
+from flask_wtf import CSRFProtect, FlaskForm
+from flask_bootstrap import Bootstrap5
+
 
 from brother_ql_web.configuration import (
     Configuration,
@@ -21,9 +31,10 @@ from brother_ql_web.labels import (
     print_label,
 )
 from brother_ql.backends.network import BrotherQLBackendNetwork
-from odoo_client import OdooClient, load_countries
-from config import config, ConfigError
-from utils import append_to_csv
+
+from odoo_client import *
+from config import *
+from utils import *
 
 app = Flask(__name__)
 app.secret_key = config.FLASK_APP_SECRET_KEY
@@ -75,6 +86,12 @@ class LeadForm(FlaskForm):
     submit = SubmitField()
 
 
+class ConfigForm(FlaskForm):
+    campaign_name = StringField("Campaign Name *", validators=[DataRequired()])
+    printing_enabled = BooleanField("Printing Enabled")
+    submit = SubmitField("Save Changes")
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     form = LeadForm()
@@ -118,18 +135,19 @@ def index():
         except Exception as e:
             logging.error(f"Couldn't create Lead in Odoo: {e}")
 
-        label_text = f"Hello \n{form.name.data}"
+        if config.PRINTING_ENABLED:
+            label_text = f"Hello \n{form.name.data}"
 
-        parameters = LabelParameters(
-            configuration=printer_config, text=label_text, label_size="54"
-        )
-        qlr = generate_label(
-            parameters=parameters,
-            configuration=printer_config,
-            save_image_to="sample-out.png" if config.LOG_LEVEL == "DEBUG" else None,
-        )
+            parameters = LabelParameters(
+                configuration=printer_config, text=label_text, label_size="54"
+            )
 
-        if config.LOG_LEVEL != "DEBUG":
+            qlr = generate_label(
+                parameters=parameters,
+                configuration=printer_config,
+                save_image_to="sample-out.png" if config.LOG_LEVEL == "DEBUG" else None,
+            )
+
             print_label(
                 parameters=parameters,
                 qlr=qlr,
@@ -144,6 +162,23 @@ def index():
         "form.html",
         form=form,
     )
+
+
+@app.route("/config", methods=["GET", "POST"])
+@requires_auth
+def config_endpoint():
+    form = ConfigForm(
+        campaign_name=config.CAMPAIGN_NAME, printing_enabled=config.PRINTING_ENABLED
+    )
+
+    if form.validate_on_submit():
+        config.CAMPAIGN_NAME = form.campaign_name.data
+        config.PRINTING_ENABLED = form.printing_enabled.data
+        save_config(config)
+        flash("Configuration updated successfully", "success")
+        return redirect(url_for("config_endpoint"))
+
+    return render_template("form.html", form=form)
 
 
 if __name__ == "__main__":

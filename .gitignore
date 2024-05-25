@@ -42,3 +42,4 @@ venv.bak/
 # Others - Project Specific
 sample-out.png
 leads.csv
+config.json
