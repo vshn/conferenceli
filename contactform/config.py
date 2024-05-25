@@ -20,6 +20,7 @@ class Config:
         self.TAG_NAME = self.get_env_var("TAG_NAME")
         self.CAMPAIGN_NAME = self.get_env_var("CAMPAIGN_NAME")
         self.SOURCE_NAME = self.get_env_var("SOURCE_NAME")
+        self.CSV_FILE_PATH = self.get_env_var("CSV_FILE_PATH")
         self.TAG_ID = None
         self.CAMPAIGN_ID = None
         self.SOURCE_ID = None

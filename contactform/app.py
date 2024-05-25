@@ -23,6 +23,7 @@ from brother_ql_web.labels import (
 from brother_ql.backends.network import BrotherQLBackendNetwork
 from odoo_client import OdooClient, load_countries
 from config import config, ConfigError
+from utils import append_to_csv
 
 app = Flask(__name__)
 app.secret_key = config.FLASK_APP_SECRET_KEY
@@ -79,6 +80,19 @@ def index():
     form = LeadForm()
 
     if form.validate_on_submit():
+        # Append data to CSV file
+        csv_data = {
+            "name": form.name.data,
+            "email": form.email.data,
+            "job_position": form.job_position.data,
+            "company": form.company.data,
+            "country": form.country.data,
+            "phone": form.phone.data,
+            "notes": form.notes.data,
+        }
+        append_to_csv(csv_data, config.CSV_FILE_PATH)
+
+        # Create lead in Odoo
         lead_id = odoo_client.create(
             "crm.lead",
             {
