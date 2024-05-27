@@ -44,7 +44,7 @@ build:latest:
   extends: .dockerbuild
   stage: build
   variables:
-    IMAGE_NAME: boothit
+    IMAGE_NAME: conferenceli
     IMAGE_TAG: latest
     PREVIOUS_IMAGE_TAG: latest
   rules:
