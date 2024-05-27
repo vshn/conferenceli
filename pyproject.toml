@@ -15,6 +15,7 @@ flask-wtf = "^1.2.1"
 email-validator = "^2.1.1"
 brother-ql-web = "^0.2.1"
 gunicorn = "^22.0.0"
+kubernetes = "^29.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

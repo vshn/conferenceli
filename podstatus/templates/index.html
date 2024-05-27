@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Kubernetes Pods Status</h1>
+<div id="pod-status" hx-get="/pods" hx-trigger="load, every 5s" hx-target="#pod-status" hx-swap="innerHTML">
+    Loading...
+</div>
+{% endblock %}
