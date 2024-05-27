@@ -9,7 +9,7 @@ on:
       - poetry.lock
       - pyproject.toml
       - contactform/**/*
-      - .github/workflows/docker-build.yml
+      - .github/workflows/build-push.yml
 
 jobs:
   build:
