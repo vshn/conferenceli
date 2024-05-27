@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contactform
+  labels:
+    app.kubernetes.io/name: contactform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: contactform
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: contactform
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: contactform
+          image: ghcr.io/vshn/conferenceli:main
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: TZ
+              value: UTC
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources: {}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: data

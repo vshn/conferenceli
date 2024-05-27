@@ -13,7 +13,6 @@
 * [ ] Touchscreen?
 * [ ] Ingress and QR scan? With [frp](https://github.com/fatedier/frp)
 * [ ] Booth Network?
-* [ ] Push to GitHub, GitHub Action, image at ghcr.io
 
 ## TODO Pod status
 
