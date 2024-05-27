@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 flask = "^3.0.3"
-requests = "^2.31.0"
+requests = "^2.32.2"
 python-dotenv = "^1.0.1"
 bootstrap-flask = "^2.4.0"
 flask-wtf = "^1.2.1"
