@@ -140,12 +140,11 @@ def index():
                 logging.error(f"Couldn't create Lead in Odoo: {e}")
 
         if config.PRINTING_ENABLED:
-            name_splitted = form.name.data.split(" ")
+            name_splitted = form.name.data.replace(" ","\n")
             label_text = (
                 f"{config.LABEL_HEADER}\n"
                 "☺☺☺\n"
-                f"{name_splitted[0]}\n"
-                f"{name_splitted[1]}\n"
+                f"{name_splitted}"
             )
 
             parameters = LabelParameters(
