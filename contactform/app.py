@@ -160,13 +160,15 @@ def index():
                 configuration=printer_config,
                 save_image_to="sample-out.png" if config.LOG_LEVEL == "DEBUG" else None,
             )
-
-            print_label(
-                parameters=parameters,
-                qlr=qlr,
-                configuration=printer_config,
-                backend_class=BrotherQLBackendNetwork,
-            )
+            try:
+                print_label(
+                    parameters=parameters,
+                    qlr=qlr,
+                    configuration=printer_config,
+                    backend_class=BrotherQLBackendNetwork,
+                )
+            except Exception as e:
+                flash(f"Printing failed: {e}", "error")
 
         flash("Thanks for submitting", "success")
         return redirect(url_for("index"))
@@ -188,12 +190,17 @@ def config_endpoint():
     )
 
     if form.validate_on_submit():
-        config.CAMPAIGN_NAME = form.campaign_name.data
-        config.PRINTING_ENABLED = form.printing_enabled.data
-        config.ODOO_CREATELEAD_ENABLED = form.odoo_leadcreation_enabled.data
-        config.LABEL_HEADER = form.label_header.data
-        save_config(config)
-        flash("Configuration updated successfully", "success")
+        try:
+            config.CAMPAIGN_ID = odoo_client.find_id_by_name("utm.campaign", form.campaign_name.data)
+            config.CAMPAIGN_NAME = form.campaign_name.data
+            config.PRINTING_ENABLED = form.printing_enabled.data
+            config.ODOO_CREATELEAD_ENABLED = form.odoo_leadcreation_enabled.data
+            config.LABEL_HEADER = form.label_header.data
+            save_config(config)
+            flash("Configuration updated successfully", "success")
+        except Exception as e:
+            flash(f"{e}", "error")
+
         return redirect(url_for("config_endpoint"))
 
     return render_template("form.html", form=form)
