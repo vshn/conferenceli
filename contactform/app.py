@@ -83,7 +83,7 @@ class LeadForm(FlaskForm):
     job_position = StringField("Job Position")
     phone = TelField()
     country = SelectField("Country", choices=load_countries(odoo_client))
-    notes = TextAreaField("What can VSHN help you with?")
+    notes = TextAreaField("What can VSHN help you with?", render_kw={"rows": 5})
     submit = SubmitField()
 
 
@@ -140,12 +140,8 @@ def index():
                 logging.error(f"Couldn't create Lead in Odoo: {e}")
 
         if config.PRINTING_ENABLED:
-            name_splitted = form.name.data.replace(" ","\n")
-            label_text = (
-                f"{config.LABEL_HEADER}\n"
-                "☺☺☺\n"
-                f"{name_splitted}"
-            )
+            name_splitted = form.name.data.replace(" ", "\n")
+            label_text = f"{config.LABEL_HEADER}\n" "☺☺☺\n" f"{name_splitted}"
 
             parameters = LabelParameters(
                 configuration=printer_config,
@@ -190,7 +186,9 @@ def config_endpoint():
 
     if form.validate_on_submit():
         try:
-            config.CAMPAIGN_ID = odoo_client.find_id_by_name("utm.campaign", form.campaign_name.data)
+            config.CAMPAIGN_ID = odoo_client.find_id_by_name(
+                "utm.campaign", form.campaign_name.data
+            )
             config.CAMPAIGN_NAME = form.campaign_name.data
             config.PRINTING_ENABLED = form.printing_enabled.data
             config.ODOO_CREATELEAD_ENABLED = form.odoo_leadcreation_enabled.data
