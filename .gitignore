@@ -45,3 +45,4 @@ leads.csv
 config.json
 brother-config.json
 frpc.toml
+deployment/apps/contactform/secret.yaml
