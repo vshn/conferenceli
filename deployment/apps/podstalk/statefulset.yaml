@@ -7,7 +7,7 @@ spec:
     matchLabels:
       app: podstalk
   serviceName: podstalk
-  replicas: 3
+  replicas: 5
   template:
     metadata:
       labels:
