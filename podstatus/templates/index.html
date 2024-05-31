@@ -7,27 +7,35 @@
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const eventSource = new EventSource("/stream");
+        setTimeout(function () {
+            const eventSource = new EventSource("/stream");
+            let firstEvent = true;
 
-        eventSource.onmessage = function (event) {
-            const data = JSON.parse(event.data.replaceAll("'", '"'));
-            const podStatus = data;
-            const podName = podStatus.name;
-            const podStatusValue = podStatus.status;
-            const podIndex = podStatus.index;
+            eventSource.onmessage = function (event) {
+                const data = JSON.parse(event.data.replaceAll("'", '"'));
+                const podStatus = data;
+                const podName = podStatus.name;
+                const podStatusValue = podStatus.status;
+                const podIndex = podStatus.index;
 
-            let podElement = document.getElementById(podName);
-            if (!podElement) {
-                podElement = document.createElement('div');
-                podElement.id = podName;
-                podElement.className = 'pod';
-                document.getElementById('pod-status').appendChild(podElement);
-            }
+                if (firstEvent) {
+                    document.getElementById('pod-status').innerHTML = '';
+                    firstEvent = false;
+                }
 
-            podElement.innerHTML = `<strong>${podName}</strong>: ${podStatusValue}`;
-            podElement.style.backgroundColor = podStatusValue === 'Running' ? 'green' :
-                podStatusValue === 'Pending' ? 'yellow' : 'red';
-        };
+                let podElement = document.getElementById(podName);
+                if (!podElement) {
+                    podElement = document.createElement('div');
+                    podElement.id = podName;
+                    podElement.className = 'pod';
+                    document.getElementById('pod-status').appendChild(podElement);
+                }
+
+                podElement.innerHTML = `<strong>${podName}</strong>: ${podStatusValue}`;
+                podElement.style.backgroundColor = podStatusValue === 'Running' ? 'green' :
+                    podStatusValue === 'Pending' ? 'yellow' : 'red';
+            };
+        }, 1000); // Delay of 1 second before initializing SSE connection
     });
 </script>
 <style>
