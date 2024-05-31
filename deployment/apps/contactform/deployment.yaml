@@ -23,6 +23,9 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+          env:
+            - name: CONFIG_FILE_PATH
+              value: /opt/data/config.json
           envFrom:
             - secretRef:
                 name: contactform-env
