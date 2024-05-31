@@ -1,7 +1,8 @@
 import logging
 import os
+import random
 from kubernetes import client, config as k8sconfig, watch
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, jsonify
 from flask_bootstrap import Bootstrap5
 from threading import Thread, Event
 
@@ -43,6 +44,17 @@ def watch_pods():
             "index": pod.metadata.labels.get("statefulset.kubernetes.io/pod-name", "unknown"),
         }
         yield f'data: {pod_status}\n\n'
+
+@app.route("/chaos")
+def chaos():
+    pods = v1.list_namespaced_pod(namespace).items
+    if pods:
+        pod = random.choice(pods)
+        pod_name = pod.metadata.name
+        v1.delete_namespaced_pod(pod_name, namespace)
+        return jsonify({"message": f"Pod {pod_name} deleted"}), 200
+    else:
+        return jsonify({"message": "No pods available to delete"}), 404
 
 @app.route("/stream")
 def stream():
