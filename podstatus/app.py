@@ -13,7 +13,7 @@ app.secret_key = config.FLASK_APP_SECRET_KEY
 bootstrap = Bootstrap5(app)
 
 # Basic styling
-app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "sandstone"
+app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "solar"
 app.config["BOOTSTRAP_SERVE_LOCAL"] = True
 
 # Load kubeconfig or use in-cluster configuration
