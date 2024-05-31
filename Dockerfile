@@ -18,15 +18,20 @@ RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root
 ### RUNTIME
 FROM python:3.12-bookworm as runtime
 
+RUN apt-get update && \
+    apt-get install -y nginx && \
+    rm -rf /var/lib/apt/lists/*
+
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/contactform" \
-    GUNICORN_CMD_ARGS="--workers=1 --bind=0.0.0.0:8000 --access-logfile=-"
+    GUNICORN_CMD_ARGS="--workers=1 --bind=unix:/app/gunicorn.sock --access-logfile=-"
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 COPY contactform ./contactform
+COPY nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["gunicorn", "contactform.app:app"]
+CMD ["sh", "-c", "nginx && gunicorn contactform.app:app"]
