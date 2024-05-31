@@ -344,6 +344,22 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
+name = "flask-sse"
+version = "1.0.0"
+description = "Server-Sent Events for Flask"
+optional = false
+python-versions = "*"
+files = [
+    {file = "Flask-SSE-1.0.0.tar.gz", hash = "sha256:4f84714c2549a45e4f17bfc5f68ee8a9f298b22740a6844404d1c74551f2090d"},
+    {file = "Flask_SSE-1.0.0-py2.py3-none-any.whl", hash = "sha256:f86d7ecff0607333755c444130c395e7a133fb7ae6cf76fbd29b1da36d34776b"},
+]
+
+[package.dependencies]
+flask = ">=0.9"
+redis = "*"
+six = "*"
+
+[[package]]
 name = "flask-wtf"
 version = "1.2.1"
 description = "Form rendering, validation, and CSRF protection for Flask with WTForms."
@@ -837,6 +853,21 @@ files = [
 ]
 
 [[package]]
+name = "redis"
+version = "5.0.4"
+description = "Python client for Redis database and key-value store"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "redis-5.0.4-py3-none-any.whl", hash = "sha256:7adc2835c7a9b5033b7ad8f8918d09b7344188228809c98df07af226d39dec91"},
+    {file = "redis-5.0.4.tar.gz", hash = "sha256:ec31f2ed9675cc54c21ba854cfe0462e6faf1d83c8ce5944709db8a4700b9c61"},
+]
+
+[package.extras]
+hiredis = ["hiredis (>=1.0.0)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
+
+[[package]]
 name = "requests"
 version = "2.32.2"
 description = "Python HTTP for Humans."
@@ -970,4 +1001,4 @@ email = ["email-validator"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "267811c95e50268272c9c53117d6ca363ae51245638cefbb7d1c48d2de3a47a6"
+content-hash = "22ecfe1db5115220addde002e9a8cb0a57df00a6e9bc9b3db1e3161d0733f517"

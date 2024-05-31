@@ -1,9 +1,9 @@
 import logging
 import os
-from kubernetes import client, config as k8sconfig
-
-from flask import Flask, render_template, jsonify
+from kubernetes import client, config as k8sconfig, watch
+from flask import Flask, render_template, Response
 from flask_bootstrap import Bootstrap5
+from threading import Thread, Event
 
 from config import *
 
@@ -23,30 +23,35 @@ else:
     k8sconfig.load_incluster_config()
 
 v1 = client.CoreV1Api()
-
 namespace = config.K8S_NAMESPACE
 
+stop_event = Event()
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-
-@app.route("/pods")
-def get_pods():
-    pods = v1.list_namespaced_pod(namespace)
-    pod_status = [
-        {
+def watch_pods():
+    w = watch.Watch()
+    for event in w.stream(v1.list_namespaced_pod, namespace, timeout_seconds=0):
+        if stop_event.is_set():
+            break
+        pod = event['object']
+        pod_status = {
             "name": pod.metadata.name,
             "status": pod.status.phase,
-            "index": pod.metadata.labels.get(
-                "statefulset.kubernetes.io/pod-name", "unknown"
-            ),
+            "index": pod.metadata.labels.get("statefulset.kubernetes.io/pod-name", "unknown"),
         }
-        for pod in pods.items
-    ]
-    return jsonify(pod_status)
+        yield f'data: {pod_status}\n\n'
 
+@app.route("/stream")
+def stream():
+    return Response(watch_pods(), content_type='text/event-stream')
+
+@app.route("/shutdown", methods=['POST'])
+def shutdown():
+    stop_event.set()
+    return 'Shutting down...'
 
 if __name__ == "__main__":
     flask_debug = True if config.LOG_LEVEL == "DEBUG" else False

@@ -2,7 +2,41 @@
 
 {% block content %}
 <h1>Kubernetes Pods Status</h1>
-<div id="pod-status" hx-get="/pods" hx-trigger="load, every 5s" hx-target="#pod-status" hx-swap="innerHTML">
+<div id="pod-status">
     Loading...
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const eventSource = new EventSource("/stream");
+
+        eventSource.onmessage = function (event) {
+            const data = JSON.parse(event.data.replaceAll("'", '"'));
+            const podStatus = data;
+            const podName = podStatus.name;
+            const podStatusValue = podStatus.status;
+            const podIndex = podStatus.index;
+
+            let podElement = document.getElementById(podName);
+            if (!podElement) {
+                podElement = document.createElement('div');
+                podElement.id = podName;
+                podElement.className = 'pod';
+                document.getElementById('pod-status').appendChild(podElement);
+            }
+
+            podElement.innerHTML = `<strong>${podName}</strong>: ${podStatusValue}`;
+            podElement.style.backgroundColor = podStatusValue === 'Running' ? 'green' :
+                podStatusValue === 'Pending' ? 'yellow' : 'red';
+        };
+    });
+</script>
+<style>
+    .pod {
+        padding: 10px;
+        margin: 5px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        color: white;
+    }
+</style>
 {% endblock %}
