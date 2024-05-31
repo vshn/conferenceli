@@ -14,5 +14,5 @@ data:
     [[proxies]]
     name = "conferenceli"
     type = "http"
-    localPort = 8000
+    localPort = 8080
     subdomain = "conferenceli"
