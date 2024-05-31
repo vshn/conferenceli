@@ -33,6 +33,8 @@ class Config:
         self.CONFIG_FILE_PATH = self.get_env_var("CONFIG_FILE_PATH", "config.json")
         self.BASIC_AUTH_USERNAME = self.get_env_var("BASIC_AUTH_USERNAME")
         self.BASIC_AUTH_PASSWORD = self.get_env_var("BASIC_AUTH_PASSWORD")
+        self.LABEL_FONT_FAMILY = self.get_env_var("LABEL_FONT_FAMILY","DejaVu Sans")
+        self.LABEL_FONT_STYLE = self.get_env_var("LABEL_FONT_STYLE","Book")
         self.TAG_ID = None
         self.CAMPAIGN_ID = None
         self.SOURCE_ID = None

@@ -70,7 +70,7 @@ printer_config = Configuration(
             Font(family="IBM Plex Sans", style="Bold"),
             Font(family="Source Code Pro", style="Bold"),
         ],
-        default_font=Font(family="Source Code Pro", style="Bold"),
+        default_font=Font(family=config.LABEL_FONT_FAMILY, style=config.LABEL_FONT_STYLE),
     ),
     website=WebsiteConfiguration,
 )
