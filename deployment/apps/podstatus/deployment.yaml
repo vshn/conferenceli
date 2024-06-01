@@ -26,9 +26,6 @@ spec:
           envFrom:
             - secretRef:
                 name: podstatus-env
-          volumeMounts:
-            - name: data
-              mountPath: /opt/data
           livenessProbe:
             httpGet:
               path: /
