@@ -23,6 +23,11 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+          env:
+            - name: LOG_LEVEL
+              value: DEBUG
+            - name: K8S_NAMESPACE
+              value: http-echo
           envFrom:
             - secretRef:
                 name: podstatus-env

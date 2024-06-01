@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: http-echo
+spec:
+  selector:
+    matchLabels:
+      app: http-echo
+  serviceName: http-echo
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        app: http-echo
+    spec:
+      terminationGracePeriodSeconds: 1
+      containers:
+        - name: echo
+          image: docker.io/hashicorp/http-echo:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080

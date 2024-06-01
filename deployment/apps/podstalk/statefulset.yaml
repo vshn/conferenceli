@@ -16,7 +16,7 @@ spec:
       terminationGracePeriodSeconds: 1
       containers:
         - name: podstalk
-          image: docker.io/mhutter/podstalk
+          image: docker.io/mhutter/podstalk:2019-arm64
           ports:
             - containerPort: 8080
           env:
