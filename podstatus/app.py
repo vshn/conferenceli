@@ -9,7 +9,7 @@ from flask import Flask, render_template, Response, jsonify
 from flask_bootstrap import Bootstrap5
 from threading import Thread, Event
 from blinkstick import blinkstick
-from usb.core import NoBackendError
+from usb.core import NoBackendError, USBError
 
 from config import *
 
@@ -46,7 +46,9 @@ try:
 except NoBackendError as e:
     logging.fatal(f"BlinkStick setup failed: {e}")
     bstick = None
-
+except USBError as e:
+    logging.fatal(f"BlinkStick setup failed: {e}")
+    bstick = None
 
 # Threading setup
 stop_event = Event()
