@@ -45,6 +45,7 @@ try:
     led_per_pod = 3
 except NoBackendError as e:
     logging.fatal(f"BlinkStick setup failed: {e}")
+    bstick = None
 
 
 # Threading setup
