@@ -24,14 +24,14 @@ RUN apt-get update && \
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
-    PYTHONPATH="/contactform" \
+    PYTHONPATH="/conferenceli" \
     GUNICORN_CMD_ARGS="--workers=1 --bind=unix:/app/gunicorn.sock --access-logfile=-"
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-COPY contactform ./contactform
+COPY contactform ./conferenceli
 COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "nginx && gunicorn contactform.app:app"]
+CMD ["sh", "-c", "nginx && gunicorn conferenceli.app:app"]
