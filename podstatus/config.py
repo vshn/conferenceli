@@ -12,7 +12,7 @@ class Config:
         load_dotenv()
         self.FLASK_APP_SECRET_KEY = self.get_env_var("FLASK_APP_SECRET_KEY")
         self.LOG_LEVEL = self.get_env_var("LOG_LEVEL", "INFO").upper()
-        self.KUBECONFIG = self.get_env_var("KUBECONFIG", None)
+        self.KUBECONFIG = os.getenv("KUBECONFIG", None)
         self.K8S_NAMESPACE = self.get_env_var("K8S_NAMESPACE")
 
     def get_env_var(self, name, default=None):
