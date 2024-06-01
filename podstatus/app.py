@@ -98,7 +98,12 @@ def chaos():
     if pods:
         pod = random.choice(pods)
         pod_name = pod.metadata.name
-        v1.delete_namespaced_pod(pod_name, namespace)
+        try:
+            v1.delete_namespaced_pod(pod_name, namespace)
+            logging.info(f"Chaos monkey deleted pod {pod_name}")
+        except ApiException as e:
+            logging.error(f"Chaos monkey couldn't delete pod {pod_name} because {e}")
+            return jsonify({"message": f"Deleting of {pod_name} failed"}), 500
         return jsonify({"message": f"Pod {pod_name} deleted"}), 200
     else:
         return jsonify({"message": "No pods available to delete"}), 404
