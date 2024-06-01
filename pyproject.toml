@@ -17,6 +17,7 @@ brother-ql-web = "^0.2.1"
 gunicorn = "^22.0.0"
 kubernetes = "^29.0.0"
 flask-sse = "^1.0.0"
+blinkstick = "^1.2.0"
 
 
 [tool.poetry.group.dev.dependencies]

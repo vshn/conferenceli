@@ -75,6 +75,20 @@ files = [
 ]
 
 [[package]]
+name = "blinkstick"
+version = "1.2.0"
+description = "Python package to control BlinkStick USB devices."
+optional = false
+python-versions = "*"
+files = [
+    {file = "BlinkStick-1.2.0-py3-none-any.whl", hash = "sha256:eeabbb207180b46f92aec392dd508c24e6ddaede6101f4eb54e7a91bed424d08"},
+    {file = "BlinkStick-1.2.0.tar.gz", hash = "sha256:a9324e04a3733c89476182bddeb109b4487de0dc7d01f587e07e191d501cb365"},
+]
+
+[package.dependencies]
+pywinusb = "*"
+
+[[package]]
 name = "bootstrap-flask"
 version = "2.4.0"
 description = "Bootstrap 4 & 5 helper for your Flask projects."
@@ -793,6 +807,16 @@ files = [
 ]
 
 [[package]]
+name = "pywinusb"
+version = "0.4.2"
+description = "A package that simplifies USB/HID communications on windows"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pywinusb-0.4.2.zip", hash = "sha256:e2f5e89f7b74239ca4843721a9bda0fc99014750630c189a176ec0e1b35e86df"},
+]
+
+[[package]]
 name = "pyyaml"
 version = "6.0.1"
 description = "YAML parser and emitter for Python"
@@ -1001,4 +1025,4 @@ email = ["email-validator"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "22ecfe1db5115220addde002e9a8cb0a57df00a6e9bc9b3db1e3161d0733f517"
+content-hash = "c17e1d090da0460aef76108c07ae37ae9153f50e58bbce92af2e4a248a9991e9"
