@@ -5,7 +5,7 @@ metadata:
 spec:
   type: NodePort
   selector:
-    app: podstatus
+    app.kubernetes.io/name: podstatus
   ports:
     - protocol: TCP
       port: 8080
