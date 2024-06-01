@@ -25,8 +25,10 @@ app.config["BOOTSTRAP_SERVE_LOCAL"] = True
 kubeconfig_path = config.KUBECONFIG
 try:
     if kubeconfig_path:
+        logging.info(f"Loading kubeconfig from {kubeconfig_path}")
         k8sconfig.load_kube_config(config_file=kubeconfig_path)
     else:
+        logging.info(f"Loading in-cluster kubeconfig")
         k8sconfig.load_incluster_config()
 
     v1 = client.CoreV1Api()
@@ -38,6 +40,8 @@ except ConfigException as e:
 # Blinkstick setup
 try:
     bstick = blinkstick.find_first()
+    if not bstick:
+        logging.info("No BlinkStick found")
     led_per_pod = 3
 except NoBackendError as e:
     logging.fatal(f"BlinkStick setup failed: {e}")
@@ -70,19 +74,18 @@ def watch_pods():
         if pod_index not in pod_index_map:
             pod_index_map[pod_index] = len(pod_index_map)
 
-        color = (
-            "#008000"
-            if pod_status == "Running"
-            else "#ffff00" if pod_status == "Pending" else "#ff0000"
-        )
-        set_led_color(pod_index_map[pod_index], color)
+        if bstick:
+            color = (
+                "#008000"
+                if pod_status == "Running"
+                else "#ffff00" if pod_status == "Pending" else "#ff0000"
+            )
+            set_led_color(pod_index_map[pod_index], color)
 
         yield f'data: {{"name": "{pod_name}", "status": "{pod_status}", "index": "{pod_index}"}}\n\n'
 
 
 ### Routes
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
