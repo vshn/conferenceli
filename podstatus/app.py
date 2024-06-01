@@ -42,7 +42,14 @@ try:
     bstick = blinkstick.find_first()
     if not bstick:
         logging.info("No BlinkStick found")
-    led_per_pod = 3
+    logging.info(
+        f"BlinkStick found: {bstick.get_description()} - {bstick.get_serial()}"
+    )
+    logging.info(
+        f"Setting total LED to {config.BLINKSTICK_TOTAL_LED} and grouping to {config.BLINKSTICK_GROUP_LED}"
+    )
+    bstick.set_led_count(config.BLINKSTICK_TOTAL_LED)
+    led_per_pod = config.BLINKSTICK_GROUP_LED
 except NoBackendError as e:
     logging.fatal(f"BlinkStick setup failed: {e}")
     bstick = None

@@ -14,6 +14,8 @@ class Config:
         self.LOG_LEVEL = self.get_env_var("LOG_LEVEL", "INFO").upper()
         self.KUBECONFIG = os.getenv("KUBECONFIG", None)
         self.K8S_NAMESPACE = self.get_env_var("K8S_NAMESPACE")
+        self.BLINKSTICK_TOTAL_LED = self.get_env_int_var("BLINKSTICK_TOTAL_LED", 15)
+        self.BLINKSTICK_GROUP_LED = self.get_env_int_var("BLINKSTICK_GROUP_LED", 3)
 
     def get_env_var(self, name, default=None):
         value = os.getenv(name, default)
@@ -22,7 +24,7 @@ class Config:
         return value.replace('"', "")
 
     def get_env_int_var(self, name, default=None):
-        value = self.get_env_var(name, default)
+        value = os.getenv(name, default)
         try:
             return int(value)
         except ValueError:
