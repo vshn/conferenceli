@@ -8,6 +8,7 @@ on:
       - Dockerfile.contactform
       - poetry.lock
       - pyproject.toml
+      - nginx.conf
       - contactform/**/*
       - .github/workflows/build-push-contactform.yaml
 

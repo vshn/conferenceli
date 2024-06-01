@@ -8,6 +8,7 @@ on:
       - Dockerfile.podstatus
       - poetry.lock
       - pyproject.toml
+      - nginx.conf
       - podstatus/**/*
       - .github/workflows/build-push-podstatus.yaml
 
