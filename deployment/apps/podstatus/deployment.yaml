@@ -39,11 +39,6 @@ spec:
             httpGet:
               path: /
               port: http
-          resources: {}
-          volumeMounts:
-            - mountPath: /dev/bus/usb
-              name: dev-bus-usb
-      volumes:
-        - name: dev-bus-usb
-          hostPath:
-            path: /dev/bus/usb
+          resources:
+            limits:
+              squat.ai/blinkstick: "1"
