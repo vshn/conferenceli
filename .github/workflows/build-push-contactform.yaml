@@ -1,15 +1,15 @@
-name: Build and Push Docker Image
+name: Build and Push Contactform
 
 on:
   push:
     branches:
       - main
     paths:
-      - Dockerfile
+      - Dockerfile.contactform
       - poetry.lock
       - pyproject.toml
       - contactform/**/*
-      - .github/workflows/build-push.yaml
+      - .github/workflows/build-push-contactform.yaml
 
 env:
   REGISTRY: ghcr.io
@@ -60,6 +60,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: Dockerfile.contactform
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

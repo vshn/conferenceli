@@ -17,7 +17,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: contactform
-          image: ghcr.io/vshn/conferenceli:main
+          image: ghcr.io/vshn/conferenceli-contactform:main
           imagePullPolicy: Always
           ports:
             - name: http
