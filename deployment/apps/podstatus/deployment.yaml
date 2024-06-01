@@ -38,10 +38,3 @@ spec:
               path: /
               port: http
           resources: {}
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: data
-        - name: frpc-config
-          configMap:
-            name: frpc-config
