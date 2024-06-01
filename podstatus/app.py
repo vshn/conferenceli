@@ -1,12 +1,15 @@
 import logging
 import os
+import sys
 import random
 import time
 from kubernetes import client, config as k8sconfig, watch
+from kubernetes.config import ConfigException
 from flask import Flask, render_template, Response, jsonify
 from flask_bootstrap import Bootstrap5
 from threading import Thread, Event
 from blinkstick import blinkstick
+from usb.core import NoBackendError
 
 from config import *
 
@@ -20,21 +23,28 @@ app.config["BOOTSTRAP_SERVE_LOCAL"] = True
 
 # Load kubeconfig or use in-cluster configuration
 kubeconfig_path = config.KUBECONFIG
-if kubeconfig_path:
-    k8sconfig.load_kube_config(config_file=kubeconfig_path)
-else:
-    k8sconfig.load_incluster_config()
+try:
+    if kubeconfig_path:
+        k8sconfig.load_kube_config(config_file=kubeconfig_path)
+    else:
+        k8sconfig.load_incluster_config()
 
-# Kubernetes setup
-v1 = client.CoreV1Api()
-namespace = config.K8S_NAMESPACE
+    v1 = client.CoreV1Api()
+    namespace = config.K8S_NAMESPACE
+except ConfigException as e:
+    logging.fatal(e)
+    sys.exit(4)
+
+# Blinkstick setup
+try:
+    bstick = blinkstick.find_first()
+    led_per_pod = 3
+except NoBackendError as e:
+    logging.fatal(f"BlinkStick setup failed: {e}")
+
 
 # Threading setup
 stop_event = Event()
-
-# Blinkstick setup
-bstick = blinkstick.find_first()
-led_per_pod = 3
 
 
 def set_led_color(pod_index, color):
