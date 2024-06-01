@@ -21,7 +21,7 @@ spec:
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: 8080
               protocol: TCP
           env:
             - name: CONFIG_FILE_PATH
