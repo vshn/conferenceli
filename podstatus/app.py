@@ -1,17 +1,20 @@
 import logging
-import os
-import sys
-import random
 import time
+import random
+from threading import Thread, Event
 from kubernetes import client, config as k8sconfig, watch
 from kubernetes.config import ConfigException
 from flask import Flask, render_template, Response, jsonify
 from flask_bootstrap import Bootstrap5
-from threading import Thread, Event
 from blinkstick import blinkstick
 from usb.core import NoBackendError, USBError
 
 from config import *
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -29,12 +32,14 @@ try:
         logging.info(f"Loading kubeconfig from {kubeconfig_path}")
         k8sconfig.load_kube_config(config_file=kubeconfig_path)
     else:
-        logging.info(f"Loading in-cluster kubeconfig")
+        logging.info("Loading in-cluster kubeconfig")
         k8sconfig.load_incluster_config()
 
     v1 = client.CoreV1Api()
     namespace = config.K8S_NAMESPACE
-except ConfigException as e:
+    if not namespace:
+        raise ValueError("K8S_NAMESPACE is not defined in the config.")
+except (ConfigException, ValueError) as e:
     logging.fatal(e)
     sys.exit(4)
 
@@ -47,15 +52,9 @@ try:
         logging.info(
             f"BlinkStick found: {bstick.get_description()} - {bstick.get_serial()}"
         )
-        logging.info(
-            f"Setting total LED to {config.BLINKSTICK_TOTAL_LED} and grouping to {config.BLINKSTICK_GROUP_LED}"
-        )
         bstick.set_led_count(config.BLINKSTICK_TOTAL_LED)
         led_per_pod = config.BLINKSTICK_GROUP_LED
-except NoBackendError as e:
-    logging.fatal(f"BlinkStick setup failed: {e}")
-    bstick = None
-except USBError as e:
+except (NoBackendError, USBError) as e:
     logging.fatal(f"BlinkStick setup failed: {e}")
     bstick = None
 
@@ -73,29 +72,32 @@ def set_led_color(pod_index, color):
 def watch_pods(update_blinkstick=False):
     w = watch.Watch()
     pod_index_map = {}
-    for event in w.stream(v1.list_namespaced_pod, namespace, timeout_seconds=0):
-        if stop_event.is_set():
-            break
-        pod = event["object"]
-        pod_name = pod.metadata.name
-        pod_status = pod.status.phase
-        pod_index = pod.metadata.labels.get(
-            "statefulset.kubernetes.io/pod-name", "unknown"
-        )
-
-        if pod_index not in pod_index_map:
-            pod_index_map[pod_index] = len(pod_index_map)
-
-        if update_blinkstick and bstick:
-            color = (
-                "#008000"
-                if pod_status == "Running"
-                else "#ffff00" if pod_status == "Pending" else "#ff0000"
+    try:
+        for event in w.stream(v1.list_namespaced_pod, namespace, timeout_seconds=0):
+            if stop_event.is_set():
+                break
+            pod = event["object"]
+            pod_name = pod.metadata.name
+            pod_status = pod.status.phase
+            pod_index = pod.metadata.labels.get(
+                "statefulset.kubernetes.io/pod-name", "unknown"
             )
-            set_led_color(pod_index_map[pod_index], color)
 
-        if not update_blinkstick:
-            yield f'data: {{"name": "{pod_name}", "status": "{pod_status}", "index": "{pod_index}"}}\n\n'
+            if pod_index not in pod_index_map:
+                pod_index_map[pod_index] = len(pod_index_map)
+
+            if update_blinkstick and bstick:
+                color = (
+                    "#008000"
+                    if pod_status == "Running"
+                    else "#ffff00" if pod_status == "Pending" else "#ff0000"
+                )
+                set_led_color(pod_index_map[pod_index], color)
+
+            if not update_blinkstick:
+                yield f'data: {{"name": "{pod_name}", "status": "{pod_status}", "index": "{pod_index}"}}\n\n'
+    except Exception as e:
+        logging.error(f"Error watching pods: {e}")
 
 
 def background_blinkstick_update():
@@ -107,7 +109,7 @@ def background_blinkstick_update():
 
 
 # Initialize the background thread and start it
-background_thread = Thread(target=background_blinkstick_update)
+background_thread = Thread(target=background_blinkstick_update, daemon=True)
 background_thread.start()
 
 
@@ -126,7 +128,7 @@ def chaos():
         try:
             v1.delete_namespaced_pod(pod_name, namespace)
             logging.info(f"Chaos monkey deleted pod {pod_name}")
-        except ApiException as e:
+        except client.ApiException as e:
             logging.error(f"Chaos monkey couldn't delete pod {pod_name} because {e}")
             return jsonify({"message": f"Deleting of {pod_name} failed"}), 500
         return jsonify({"message": f"Pod {pod_name} deleted"}), 200
@@ -149,8 +151,8 @@ def shutdown():
 
 
 if __name__ == "__main__":
-    flask_debug = True if config.LOG_LEVEL == "DEBUG" else False
+    flask_debug = config.LOG_LEVEL == "DEBUG"
     try:
         app.run(debug=flask_debug)
-    except ConfigError as e:
+    except Exception as e:
         logging.error(e)
