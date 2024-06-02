@@ -1,6 +1,7 @@
 import logging
 import time
 import random
+import atexit
 from threading import Thread, Event
 from kubernetes import client, config as k8sconfig, watch
 from kubernetes.config import ConfigException
@@ -57,6 +58,17 @@ try:
 except (NoBackendError, USBError) as e:
     logging.fatal(f"BlinkStick setup failed: {e}")
     bstick = None
+
+
+# Ensure Blinkstick is turned off on exit
+def turn_off_blinkstick():
+    if bstick:
+        logging.info("Turning off BlinkStick")
+        for i in range(config.BLINKSTICK_TOTAL_LED):
+            bstick.set_color(channel=0, index=i, hex="#000000")
+
+
+atexit.register(turn_off_blinkstick)
 
 # Threading setup
 stop_event = Event()
