@@ -12,11 +12,6 @@ from usb.core import NoBackendError, USBError
 
 from config import *
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
 # Initialize the Flask app
 app = Flask(__name__)
 app.secret_key = config.FLASK_APP_SECRET_KEY
@@ -66,12 +61,7 @@ def turn_off_blinkstick():
         logging.info("Turning off BlinkStick")
         for i in range(config.BLINKSTICK_TOTAL_LED):
             bstick.set_color(channel=0, index=i, hex="#000000")
-
-
-atexit.register(turn_off_blinkstick)
-
-# Threading setup
-stop_event = Event()
+            time.sleep(0.1)
 
 
 def set_led_color(pod_index, color):
@@ -119,6 +109,11 @@ def background_blinkstick_update():
                 break
         time.sleep(5)  # Add a small delay to prevent high CPU usage
 
+
+atexit.register(turn_off_blinkstick)
+
+# Threading setup
+stop_event = Event()
 
 # Initialize the background thread and start it
 background_thread = Thread(target=background_blinkstick_update, daemon=True)
