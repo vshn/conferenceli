@@ -13,6 +13,7 @@ from usb.core import NoBackendError, USBError
 
 from config import *
 
+# Initialize the Flask app
 app = Flask(__name__)
 app.secret_key = config.FLASK_APP_SECRET_KEY
 bootstrap = Bootstrap5(app)
@@ -69,7 +70,7 @@ def set_led_color(pod_index, color):
         time.sleep(0.1)
 
 
-def watch_pods():
+def watch_pods(update_blinkstick=False):
     w = watch.Watch()
     pod_index_map = {}
     for event in w.stream(v1.list_namespaced_pod, namespace, timeout_seconds=0):
@@ -85,7 +86,7 @@ def watch_pods():
         if pod_index not in pod_index_map:
             pod_index_map[pod_index] = len(pod_index_map)
 
-        if bstick:
+        if update_blinkstick and bstick:
             color = (
                 "#008000"
                 if pod_status == "Running"
@@ -93,7 +94,21 @@ def watch_pods():
             )
             set_led_color(pod_index_map[pod_index], color)
 
-        yield f'data: {{"name": "{pod_name}", "status": "{pod_status}", "index": "{pod_index}"}}\n\n'
+        if not update_blinkstick:
+            yield f'data: {{"name": "{pod_name}", "status": "{pod_status}", "index": "{pod_index}"}}\n\n'
+
+
+def background_blinkstick_update():
+    while not stop_event.is_set():
+        for _ in watch_pods(update_blinkstick=True):
+            if stop_event.is_set():
+                break
+        time.sleep(5)  # Add a small delay to prevent high CPU usage
+
+
+# Initialize the background thread and start it
+background_thread = Thread(target=background_blinkstick_update)
+background_thread.start()
 
 
 ### Routes
@@ -121,12 +136,15 @@ def chaos():
 
 @app.route("/stream")
 def stream():
-    return Response(watch_pods(), content_type="text/event-stream")
+    return Response(
+        watch_pods(update_blinkstick=False), content_type="text/event-stream"
+    )
 
 
 @app.route("/shutdown", methods=["POST"])
 def shutdown():
     stop_event.set()
+    background_thread.join()
     return "Shutting down..."
 
 
