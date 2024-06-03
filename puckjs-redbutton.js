@@ -9,7 +9,7 @@ NRF.setServices(undefined, { hid: kb.report });
 NRF.nfcURL("https://vs.hn/boothraffle");
 
 function btnPressed() {
-    console.log("Button pressed!");
+    console.log("Button pressed! Battery level: " + E.getBattery());
     digitalWrite(LED1, 1);
 
     setTimeout(function () {
