@@ -4,7 +4,7 @@ metadata:
   name: contactform
 spec:
   selector:
-    app: contactform
+    app.kubernetes.io/name: contactform
   ports:
     - protocol: TCP
       port: 8080
