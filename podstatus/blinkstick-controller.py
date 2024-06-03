@@ -65,6 +65,7 @@ signal.signal(signal.SIGHUP, turn_off_blinkstick)
 def set_led_color(pod_index, color):
     start_led = pod_index * led_per_pod
     for i in range(start_led, start_led + led_per_pod):
+        logging.debug(f"Setting color of LED {i} to {color}")
         bstick.set_color(channel=0, index=i, hex=color)
         time.sleep(0.1)
 

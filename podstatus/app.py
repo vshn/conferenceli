@@ -1,11 +1,19 @@
 import logging
 import random
+import sys
+import signal
+import threading
 from flask import Flask, render_template, Response, jsonify
 from flask_bootstrap import Bootstrap5
-from kubernetes import client, config as k8sconfig
+from kubernetes import client, watch, config as k8sconfig
 from kubernetes.config import ConfigException
+from gevent.pywsgi import WSGIServer
+from gevent import monkey
 
 from config import *
+
+# Patch all to make the app gevent compatible
+monkey.patch_all()
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -33,6 +41,21 @@ try:
 except (ConfigException, ValueError) as e:
     logging.fatal(e)
     sys.exit(4)
+
+# Define stop event for graceful shutdown
+stop_event = threading.Event()
+
+
+# Graceful shutdown
+def handle_shutdown(signum, frame):
+    logging.info("Received shutdown signal")
+    stop_event.set()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, handle_shutdown)
+signal.signal(signal.SIGINT, handle_shutdown)
+
 
 ### Routes
 @app.route("/")
@@ -79,14 +102,14 @@ def stream():
 
 @app.route("/shutdown", methods=["POST"])
 def shutdown():
-    stop_event.set()
-    background_thread.join()
+    handle_shutdown(signal.SIGTERM, None)
     return "Shutting down..."
 
 
 if __name__ == "__main__":
     flask_debug = config.LOG_LEVEL == "DEBUG"
     try:
-        app.run(debug=flask_debug)
+        http_server = WSGIServer(("0.0.0.0", 5000), app)
+        http_server.serve_forever()
     except Exception as e:
         logging.error(e)
