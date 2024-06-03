@@ -9,7 +9,7 @@ from gevent import monkey
 
 monkey.patch_all()
 
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request, make_response
 from flask_bootstrap import Bootstrap5
 from kubernetes import client, watch, config as k8sconfig
 from kubernetes.config import ConfigException
@@ -51,12 +51,35 @@ def create_app():
         logging.fatal(e)
         sys.exit(4)
 
+    # Authentication function
+    def check_auth(username, password):
+        return (
+            username == config.CHAOS_BASIC_AUTH_USERNAME
+            and password == config.CHAOS_BASIC_AUTH_PASSWORD
+        )
+
+    def authenticate():
+        message = {"message": "Authenticate."}
+        response = make_response(jsonify(message), 401)
+        response.headers["WWW-Authenticate"] = 'Basic realm="Login Required"'
+        return response
+
+    def requires_auth(f):
+        def decorated(*args, **kwargs):
+            auth = request.authorization
+            if not auth or not check_auth(auth.username, auth.password):
+                return authenticate()
+            return f(*args, **kwargs)
+
+        return decorated
+
     # Define routes
     @app.route("/")
     def index():
         return render_template("index.html")
 
     @app.route("/chaos")
+    @requires_auth
     def chaos():
         pods = v1.list_namespaced_pod(namespace).items
         if pods:

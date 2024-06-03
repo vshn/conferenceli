@@ -16,6 +16,8 @@ class Config:
         self.K8S_NAMESPACE = self.get_env_var("K8S_NAMESPACE")
         self.BLINKSTICK_TOTAL_LED = self.get_env_int_var("BLINKSTICK_TOTAL_LED", 15)
         self.BLINKSTICK_GROUP_LED = self.get_env_int_var("BLINKSTICK_GROUP_LED", 3)
+        self.CHAOS_BASIC_AUTH_USERNAME = self.get_env_var("CHAOS_BASIC_AUTH_USERNAME")
+        self.CHAOS_BASIC_AUTH_PASSWORD = self.get_env_var("CHAOS_BASIC_AUTH_PASSWORD")
 
     def get_env_var(self, name, default=None):
         value = os.getenv(name, default)
