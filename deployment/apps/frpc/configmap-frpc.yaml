@@ -14,5 +14,13 @@ data:
     [[proxies]]
     name = "conferenceli"
     type = "http"
+    localIP = "contactform.contactform"
     localPort = 8080
     subdomain = "conferenceli"
+
+    [[proxies]]
+    name = "podstatus"
+    type = "http"
+    localIP = "podstatus.podstatus"
+    localPort = 8080
+    subdomain = "podstatus"

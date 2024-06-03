@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frpc
+  labels:
+    app.kubernetes.io/name: frpc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frpc
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frpc
+    spec:
+      containers:
+        - name: frpc
+          image: ghcr.io/fatedier/frpc:v0.58.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - -c
+            - /etc/frpc/frpc.toml
+          envFrom:
+            - secretRef:
+                name: frpc-env
+          resources: {}
+          volumeMounts:
+            - name: frpc-config
+              mountPath: /etc/frpc
+      volumes:
+        - name: frpc-config
+          configMap:
+            name: frpc-config

@@ -41,23 +41,7 @@ spec:
               path: /
               port: http
           resources: {}
-        - name: frpc
-          image: ghcr.io/fatedier/frpc:v0.58.0
-          imagePullPolicy: IfNotPresent
-          args:
-            - -c
-            - /etc/frpc/frpc.toml
-          envFrom:
-            - secretRef:
-                name: frpc-env
-          resources: {}
-          volumeMounts:
-            - name: frpc-config
-              mountPath: /etc/frpc
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: data
-        - name: frpc-config
-          configMap:
-            name: frpc-config
