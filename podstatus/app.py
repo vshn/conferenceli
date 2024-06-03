@@ -81,21 +81,29 @@ def create_app():
     @app.route("/chaos")
     @requires_auth
     def chaos():
-        pods = v1.list_namespaced_pod(namespace).items
-        if pods:
-            pod = random.choice(pods)
+        try:
+            pods = v1.list_namespaced_pod(namespace).items
+            running_pods = [pod for pod in pods if pod.status.phase == "Running"]
+
+            if not running_pods:
+                logging.info("No running pods available to delete")
+                return jsonify({"message": "No running pods available to delete"}), 404
+
+            pod = random.choice(running_pods)
             pod_name = pod.metadata.name
+
             try:
                 v1.delete_namespaced_pod(pod_name, namespace)
                 logging.info(f"Chaos monkey deleted pod {pod_name}")
+                return jsonify({"message": f"Pod {pod_name} deleted"}), 200
             except client.ApiException as e:
                 logging.error(
                     f"Chaos monkey couldn't delete pod {pod_name} because {e}"
                 )
                 return jsonify({"message": f"Deleting of {pod_name} failed"}), 500
-            return jsonify({"message": f"Pod {pod_name} deleted"}), 200
-        else:
-            return jsonify({"message": "No pods available to delete"}), 404
+        except Exception as e:
+            logging.error(f"Failed to list pods in namespace {namespace} because {e}")
+            return jsonify({"message": "Failed to list pods"}), 500
 
     @app.route("/stream")
     def stream():
