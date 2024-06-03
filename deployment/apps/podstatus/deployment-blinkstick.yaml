@@ -1,28 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podstatus
+  name: blinkstick
   labels:
-    app.kubernetes.io/name: podstatus
+    app.kubernetes.io/name: blinkstick
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: podstatus
+      app.kubernetes.io/name: blinkstick
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: podstatus
+        app.kubernetes.io/name: blinkstick
     spec:
       serviceAccountName: default
       containers:
-        - name: podstatus
+        - name: blinkstick
           image: ghcr.io/vshn/conferenceli-podstatus:main
           imagePullPolicy: Always
-          ports:
-            - name: http
-              containerPort: 8080
-              protocol: TCP
+          command:
+            - python
+            - conferenceli/blinkstick-controller.py
           env:
             - name: LOG_LEVEL
               value: INFO
@@ -31,12 +30,6 @@ spec:
           envFrom:
             - secretRef:
                 name: podstatus-env
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          resources: {}
+          resources:
+            limits:
+              squat.ai/blinkstick: "1"
