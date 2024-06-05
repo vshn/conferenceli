@@ -1,0 +1,29 @@
+.bg-image {
+    background-image: url('/static/images/background.webp');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+}
+
+@media (max-width: 767px) {
+    .bg-image {
+        background-image: none;
+        background-color: #4081CB;
+    }
+}
+
+.container {
+    max-width: 850px;
+}
+
+.form-label {
+    color: white;
+}
+
+footer {
+    color: white;
+}
+
+footer a {
+    color: white;
+}

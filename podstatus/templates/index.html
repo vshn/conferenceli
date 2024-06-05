@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Kubernetes Pods Status</h1>
+<h1>Status of Pods on Kubernetes</h1>
 <div id="pod-status">
     Loading...
 </div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         setTimeout(function () {
@@ -32,8 +33,8 @@
                 }
 
                 podElement.innerHTML = `<strong>${podName}</strong>: ${podStatusValue}`;
-                podElement.style.backgroundColor = podStatusValue === 'Running' ? 'green' :
-                    podStatusValue === 'Pending' ? 'yellow' : 'red';
+                podElement.style.backgroundColor = podStatusValue === 'Running' ? '#3cf281' :
+                    podStatusValue === 'Pending' ? '#ffc107' : '#e44c55';
             };
         }, 1000); // Delay of 1 second before initializing SSE connection
     });

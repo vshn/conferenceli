@@ -28,7 +28,7 @@ def create_app():
     bootstrap = Bootstrap5(app)
 
     # Basic styling
-    app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "solar"
+    app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "vapor"
     app.config["BOOTSTRAP_SERVE_LOCAL"] = True
 
     # Load kubeconfig or use in-cluster configuration
