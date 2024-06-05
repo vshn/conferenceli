@@ -12,24 +12,10 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 
-<body>
-    <main class="container">
-        {{ render_messages(container=False, dismissible=True, dismiss_animate=True) }}
-        <img src="{{ url_for('static', filename='images/logo.png') }}" class="img-fluid mx-auto d-block w-50 m-5">
+<body class="bg-image">
+    <main class="container position-absolute top-0 end-0">
         {% block content %}{% endblock %}
     </main>
-
-    <footer class="text-center m-5">
-        {% block footer %}
-        <small> &copy;
-            <script>document.write(new Date().getFullYear())</script> <a href="https://www.vshn.ch">VSHN AG</a> - Made
-            with <a href="https://github.com/vshn/conferenceli/" target="_blank">conferenceli</a>
-        </small>
-        {% endblock %}
-    </footer>
-
-    {{ bootstrap.load_js() }}
-    <script src="{{ url_for('static', filename='js/alert-autoclose.js') }}"></script>
 </body>
 
 </html>

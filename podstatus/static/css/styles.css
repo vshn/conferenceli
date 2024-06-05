@@ -1,7 +1,14 @@
+.bg-image {
+    background-image: url('/static/images/background.png');
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+}
+
 @media (max-width: 767px) {
     .bg-image {
         background-image: none;
-        background-color: #4081CB;
     }
 }
 
