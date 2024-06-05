@@ -24,3 +24,10 @@ data:
     localIP = "podstatus.podstatus"
     localPort = 8080
     subdomain = "podstatus"
+
+    [[proxies]]
+    name = "kubernetes"
+    type = "tcp"
+    localIP = "kubernetes.default.svc"
+    localPort = 443
+    remotePort = 6102
