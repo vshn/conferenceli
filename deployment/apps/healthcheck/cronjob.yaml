@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: healthchecks-io
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  startingDeadlineSeconds: 200
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: pinghc
+              env:
+                - name: HCURL
+                  valueFrom:
+                    secretKeyRef:
+                      name: healthchecks-io
+                      key: HCURL
+              image: docker.io/library/busybox:1.35
+              args:
+                - /bin/sh
+                - -c
+                - "date && echo $HCURL && /bin/wget -q -O - --no-check-certificate $HCURL"
+          restartPolicy: OnFailure

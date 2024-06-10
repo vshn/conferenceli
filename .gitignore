@@ -48,4 +48,5 @@ frpc.toml
 deployment/apps/contactform/secret.yaml
 deployment/apps/podstatus/secret.yaml
 deployment/apps/frpc/secret.yaml
+deployment/apps/healthcheck/secret.yaml
 kubeconfig
