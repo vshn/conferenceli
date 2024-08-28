@@ -157,7 +157,19 @@ The web application is a Flask application and uses [htmx](https://htmx.org/) wi
 By issuing an authenticated `GET` request to the `/chaos` endpoint, a random Pod in the configured namespace gets deleted.
 
 On startup, an autostart command in the Wayfire configuration tries to connect to the Podstatus web application.
-Once this is successfull, a full-screen Chromium kiosk session is started, displaying the Podstatus web application.
+Once this is successful, a full-screen Chromium kiosk session is started, displaying the Podstatus web application.
+
+During development, the app can be started with (make sure to install dependencies with Poetry first):
+
+```
+FLASK_APP="podstatus/app.py" PYTHONPATH="podstatus" flask run --reload
+```
+
+And in production, the idea is that it runs with gunicorn:
+
+```
+GUNICORN_WORKERS=1 PYTHONPATH=./podstatus GUNICORN_BIND='0.0.0.0:8000' gunicorn -k gevent podstatus.app:app
+```
 
 #### The Red Button
 

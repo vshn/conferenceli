@@ -6,10 +6,16 @@
     Loading...
 </div>
 
+<h1>Status of Nodes</h1>
+<div id="node-status">
+    Loading...
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Pod status stream
         setTimeout(function () {
-            const eventSource = new EventSource("/stream");
+            const eventSource = new EventSource("/stream_pods");
             let firstEvent = true;
 
             eventSource.onmessage = function (event) {
@@ -37,10 +43,39 @@
                     podStatusValue === 'Pending' ? '#f39c12' : '#e74c3c';
             };
         }, 1000); // Delay of 1 second before initializing SSE connection
+
+        // Node status stream
+        setTimeout(function () {
+            const eventSourceNodes = new EventSource("/stream_nodes");
+            let firstEventNodes = true;
+
+            eventSourceNodes.onmessage = function (event) {
+                const data = JSON.parse(event.data.replaceAll("'", '"'));
+                const nodeName = data.name;
+                const nodeStatusValue = data.status;
+
+                if (firstEventNodes) {
+                    document.getElementById('node-status').innerHTML = '';
+                    firstEventNodes = false;
+                }
+
+                let nodeElement = document.getElementById(nodeName);
+                if (!nodeElement) {
+                    nodeElement = document.createElement('div');
+                    nodeElement.id = nodeName;
+                    nodeElement.className = 'node';
+                    document.getElementById('node-status').appendChild(nodeElement);
+                }
+
+                nodeElement.innerHTML = `<strong>${nodeName}</strong>: ${nodeStatusValue}`;
+                nodeElement.style.backgroundColor = nodeStatusValue === 'KubeletReady' ? '#00bc8c' : '#e74c3c';
+            };
+        }, 1000); // Delay of 1 second before initializing SSE connection
     });
 </script>
 <style>
-    .pod {
+    .pod,
+    .node {
         padding: 10px;
         margin: 5px;
         border: 1px solid #ccc;

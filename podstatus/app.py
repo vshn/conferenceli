@@ -105,7 +105,7 @@ def create_app():
             logging.error(f"Failed to list pods in namespace {namespace} because {e}")
             return jsonify({"message": "Failed to list pods"}), 500
 
-    @app.route("/stream")
+    @app.route("/stream_pods")
     def stream():
         def watch_pods():
             w = watch.Watch()
@@ -125,6 +125,31 @@ def create_app():
                 logging.error(f"Error watching pods: {e}")
 
         return Response(watch_pods(), content_type="text/event-stream")
+
+    @app.route("/stream_nodes")
+    def stream_nodes():
+        def watch_nodes():
+            w = watch.Watch()
+            try:
+                for event in w.stream(v1.list_node, timeout_seconds=0):
+                    node = event["object"]
+                    node_name = node.metadata.name
+                    node_status = "Unknown"
+
+                    for condition in node.status.conditions:
+                        if condition.type == "Ready":
+                            node_status = (
+                                "KubeletReady"
+                                if condition.status == "True"
+                                else "NotReady"
+                            )
+                            break
+
+                    yield f'data: {{"name": "{node_name}", "status": "{node_status}"}}\n\n'
+            except Exception as e:
+                logging.error(f"Error watching nodes: {e}")
+
+        return Response(watch_nodes(), content_type="text/event-stream")
 
     @app.route("/shutdown", methods=["POST"])
     def shutdown():
