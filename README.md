@@ -69,6 +69,14 @@ curl -sfL https://get.k3s.io | sh -s - \
   --disable-cloud-controller
 ```
 
+To add additional nodes to the cluster, use:
+
+```
+curl -sfL https://get.k3s.io | K3S_URL=https://192.168.173.10:6443 K3S_TOKEN=mynodetoken sh -
+```
+
+The token can be found at `/var/lib/rancher/k3s/server/node-token`.
+
 All deployments are done via Argo CD from the `deployment/` folder:
 
 ```
@@ -94,12 +102,26 @@ Configuration of `/etc/dnsmasq.d/landhcp`:
 
 ```
 interface=eth0
-port=0
+port=53
 bind-dynamic
 domain-needed
 bogus-priv
+server=9.9.9.9
+
+## DHCP
 dhcp-range=192.168.173.100,192.168.173.200,255.255.255.0,12h
 dhcp-host=94:dd:f8:a4:a5:53,label-printer,192.168.173.100,infinite
+dhcp-authoritative
+```
+
+It also happens to be configured as NAT router:
+
+```
+# /etc/sysctl.conf
+net.ipv4.ip_forward=1
+
+# apt install iptables-persistent
+iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
 ```
 
 ### Desktop configuration
