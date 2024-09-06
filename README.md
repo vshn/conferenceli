@@ -15,28 +15,24 @@ When attending conferences or Meetups, we bring some fancy hardware to attract p
                                       Shipping Containers                      
                                                                                
                  USB  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐    
-               ┌──────┤ LEDs  ├──┤ LEDs  ├──┤ LEDs  ├──┤ LEDs  ├──┤ LEDs  │    
+               ┌──────┤       ├──┤       ├──┤       ├──┤       ├──┤       │    
                │      └───────┘  └───────┘  └───────┘  └───────┘  └───────┘    
-               │                                                               
-               │                                                               
-               │                                                               
-               │                                                               
-               │                                                               
+               │                                                                                                                         
                │   ┌──────────────────┐                 ┌─────────────────────┐
-               │   │                  │     Ethernet    │                     │
-               └───┤ Raspberry Pi 5   ├─────────────────┤ Brother QL-820NWBc  │
-                   │                  │                 │                     │
-               **  └────────┬─────────┘                 └─────────────────────┘
-           *****            │                                                  
-Bluetooth  *                │ HDMI                                             
-           *                │                                                  
-  ┌─────────┐         ┌─────┴──────┐                                           
-  │         │         │            │                                           
-  │ Red     │         │  HDMI      │                                           
-  │ Button  │         │  Display   │                                           
-  │         │         │            │                                           
-  └─────────┘         └────────────┘                                           
-  ```
+               │   │                  ├ ─ ─ ─ ─ ─ ─ ─ ─ ┤                     │
+               └───┤ Raspberry Pi 5   │                 │ Brother QL-820NWBc  │
+                   │                  ├──────────────┐  │                     │
+               **  └────────┬─────────┘    Network   │  └─────────────┬───────┘
+           *****            │                        │                │        
+Bluetooth  *                │ HDMI                   │                │        
+           *                │                     ┌──┴────────────────┴─────┐  
+  ┌─────────┐         ┌─────┴──────┐            ┌─│ Integrated Switch       │─┐
+  │         │         │            │            │ └─────────────────────────┘ │
+  │ Red     │         │  HDMI      │            │                             │
+  │ Button  │         │  Display   │            │    PicoCluster 3T           │
+  │         │         │            │            │                             │
+  └─────────┘         └────────────┘            └─────────────────────────────┘                             
+```
 
 **Hardware list**:
 
@@ -47,22 +43,25 @@ Bluetooth  *                │ HDMI
 * [Elecrow 10.1 inch Display IPS 1280x800](https://www.elecrow.com/elecrow-10-1-inch-display-ips-1280x800-acrylic-case-touch-screen-compatible.html)
 * [Brother QL-820NWBc](https://www.brother.ch/de-ch/etiketten-und-belegdrucker/ql-820nwbc)
 * [BlinkStick Flex](https://www.blinkstick.com/products/blinkstick-flex)
-* [Buzzer Taster Rot](https://www.bastelgarage.ch/buzzer-taster-rot)
-* [Puck.js](https://www.puck-js.com/)
 * 3D-printed shipping container:
   * [Shipping Container](https://www.thingiverse.com/thing:4809607)
   * [3D Druck Service](https://3d-druck-service.ch/)
+* [Buzzer Taster Rot](https://www.bastelgarage.ch/buzzer-taster-rot)
+* [Puck.js](https://www.puck-js.com/)
+* [Pico 3T Raspberry PI5 Cluster 8GB (Advanced Kit (has boards) / 192GB (64GB microSD))](https://www.picocluster.com/products/pico-3t-raspberry-pi5-cluster-8gb)
+* [Pimoroni Blinkt!](https://www.pi-shop.ch/blinkt)
+* [0.1" 2x20-pin Strip Right Angle Female Header](https://www.pi-shop.ch/0-1-2x20-pin-strip-right-angle-female-header)
 
 ## Raspberry Pi setup
 
-The Raspberry Pi runs standard latest Raspberry Pi OS and [boots directly from the NVME SSD](https://learn.pimoroni.com/article/getting-started-with-nvme-base), no SD card is inserted.
+The main Raspberry Pi runs standard latest Raspberry Pi OS and [boots directly from the NVME SSD](https://learn.pimoroni.com/article/getting-started-with-nvme-base), no SD card is inserted.
 
 ### K3s installation and bootstrapping
 
 It is installed using the upstream installer:
 
 ```
-curl -sfL https://get.k3s.io | sh -s - \
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest sh -s - \
   --tls-san '192.168.173.10' \
   --tls-san 'conferenceli' \
   --embedded-registry \
@@ -72,7 +71,7 @@ curl -sfL https://get.k3s.io | sh -s - \
 To add additional nodes to the cluster, use:
 
 ```
-curl -sfL https://get.k3s.io | K3S_URL=https://192.168.173.10:6443 K3S_TOKEN=mynodetoken sh -
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=latest K3S_URL=https://192.168.173.10:6443 K3S_TOKEN=mynodetoken sh -
 ```
 
 The token can be found at `/var/lib/rancher/k3s/server/node-token`.
@@ -141,6 +140,50 @@ plugins=alpha animate autostart autostart-static command cube pixdecor expo fast
 To hide the mouse cursor, a plugin is used.
 See [this StackExchange](https://raspberrypi.stackexchange.com/questions/145382/remove-hide-mouse-cursor-when-idle-on-rasbperry-pi-os-bookworm) article for more information.
 
+## PicoCluster
+
+In addition to the main Raspberry Pi, there is an optional [PicoCluster](https://www.picocluster.com/) running.
+The boards of the PicoCluster are installed as K3s nodes, so that we have more computing power.
+And because we want blinken lights, each of the boards have a [Pimoroni Blinkt!](https://shop.pimoroni.com/products/blinkt) attached.
+
+### Blinkt!
+
+To get the Blinkt! up and running on a Raspberry Pi 5, the following manual steps are followed on each PicoCluster node:
+
+```
+mkdir -p src
+cd src
+git clone https://github.com/pimoroni/blinkt -b repackage
+cd blinkt
+./install.sh --unstable
+
+Would you like us to create and/or use a default one? [y/N] y
+Would you like to copy examples to /home/picocluster/Pimoroni/blinkt? [y/N] y
+Would you like to generate documentation? [y/N] N
+```
+
+The systemd unit at `/etc/systemd/system/blinkt.service` makes sure the Blinkt! blinks after power on:
+
+```
+[Unit]
+Description=blinkt
+
+[Service]
+Type=simple
+ExecStart=/home/picocluster/.virtualenvs/pimoroni/bin/python /home/picocluster/Pimoroni/blinkt/examples/cpu_load.py
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Make sure to install and enable this unit:
+```
+sudo systemctl daemon-reload
+sudo systemctl start blinkt
+sudo systemctl enable blinkt
+```
+
 ## Apps
 
 ### Podstatus with LEDs
@@ -148,7 +191,7 @@ See [this StackExchange](https://raspberrypi.stackexchange.com/questions/145382/
 The Podstatus app lives in the `podstatus/` folder.
 It serves two main purposes:
 
-* A simple web application which displays the live status of the Pods and does the actual chaos Pod deletion
+* A simple web application which displays the live status of the Pods and Nodes, and it does the actual chaos Pod deletion
 * A controller which manages the BlinkStick LEDs in the shipping containers
 
 Both apps are connecting to the Kubernetes API and are watching the Pod status.
