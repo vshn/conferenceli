@@ -39,6 +39,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# IDE
+.idea/
+
 # Others - Project Specific
 sample-out.png
 leads.csv
