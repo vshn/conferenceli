@@ -53,6 +53,10 @@
                 const data = JSON.parse(event.data.replaceAll("'", '"'));
                 const nodeName = data.name;
                 const nodeStatusValue = data.status;
+                const kubeletVersion = data.kubeletVersion;
+                const architecture = data.architecture;
+                const kernelVersion = data.kernelVersion;
+                const osImage = data.osImage;
 
                 if (firstEventNodes) {
                     document.getElementById('node-status').innerHTML = '';
@@ -67,10 +71,14 @@
                     document.getElementById('node-status').appendChild(nodeElement);
                 }
 
-                nodeElement.innerHTML = `<strong>${nodeName}</strong>: ${nodeStatusValue}`;
+                nodeElement.innerHTML = `
+                    <strong>${nodeName}</strong><br>
+                    ${kubeletVersion} - ${osImage} (${kernelVersion})
+                `;
                 nodeElement.style.backgroundColor = nodeStatusValue === 'KubeletReady' ? '#00bc8c' : '#e74c3c';
             };
         }, 1000); // Delay of 1 second before initializing SSE connection
+
     });
 </script>
 <style>

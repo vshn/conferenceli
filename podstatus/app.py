@@ -136,6 +136,7 @@ def create_app():
                     node_name = node.metadata.name
                     node_status = "Unknown"
 
+                    # Extract node conditions
                     for condition in node.status.conditions:
                         if condition.type == "Ready":
                             node_status = (
@@ -145,7 +146,15 @@ def create_app():
                             )
                             break
 
-                    yield f'data: {{"name": "{node_name}", "status": "{node_status}"}}\n\n'
+                    # Extract additional node information
+                    node_info = node.status.node_info
+                    kubelet_version = node_info.kubelet_version
+                    architecture = node_info.architecture
+                    kernel_version = node_info.kernel_version
+                    os_image = node_info.os_image
+
+                    # Send all the node data as part of the SSE event
+                    yield f'data: {{"name": "{node_name}", "status": "{node_status}", "kubeletVersion": "{kubelet_version}", "architecture": "{architecture}", "kernelVersion": "{kernel_version}", "osImage": "{os_image}"}}\n\n'
             except Exception as e:
                 logging.error(f"Error watching nodes: {e}")
 
