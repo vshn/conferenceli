@@ -65,7 +65,7 @@ def requires_auth(f):
     return decorated
 
 
-def randomWord(length=5):
+def random_word(length=5):
     consonants = "bcdfghjklmnpqrstvwxyz"
     vowels = "aeiou"
 

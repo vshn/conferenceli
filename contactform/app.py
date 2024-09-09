@@ -94,7 +94,7 @@ def index():
 
     if form.validate_on_submit():
         # Generate a random voucher code for APPUiO
-        voucher_code = randomWord(6)
+        voucher_code = random_word(6)
 
         # Append data to CSV file
         csv_data = {
