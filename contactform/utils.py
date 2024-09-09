@@ -23,6 +23,7 @@ def append_to_csv(data, file_path):
             "Tags",
             "Campaign",
             "Source",
+            "VoucherCode",
         ]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 

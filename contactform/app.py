@@ -1,4 +1,5 @@
 import logging
+import random
 from flask import (
     Flask,
     render_template,
@@ -13,6 +14,7 @@ from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_bootstrap import Bootstrap5
+from html2image import Html2Image
 
 
 from brother_ql_web.configuration import (
@@ -70,7 +72,9 @@ printer_config = Configuration(
             Font(family="IBM Plex Sans", style="Bold"),
             Font(family="Source Code Pro", style="Bold"),
         ],
-        default_font=Font(family=config.LABEL_FONT_FAMILY, style=config.LABEL_FONT_STYLE),
+        default_font=Font(
+            family=config.LABEL_FONT_FAMILY, style=config.LABEL_FONT_STYLE
+        ),
     ),
     website=WebsiteConfiguration,
 )
@@ -95,11 +99,21 @@ class ConfigForm(FlaskForm):
     submit = SubmitField("Save Changes")
 
 
+def randomWord(length=5):
+    consonants = "bcdfghjklmnpqrstvwxyz"
+    vowels = "aeiou"
+
+    return "".join(random.choice((consonants, vowels)[i % 2]) for i in range(length))
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     form = LeadForm()
 
     if form.validate_on_submit():
+        # Generate a random voucher code for APPUiO
+        voucher_code = randomWord(6)
+
         # Append data to CSV file
         csv_data = {
             "Opportunity": f"Event Lead: {form.name.data}",
@@ -113,6 +127,7 @@ def index():
             "Tags": config.TAG_NAME,
             "Campaign": config.CAMPAIGN_NAME,
             "Source": config.SOURCE_NAME,
+            "VoucherCode": voucher_code,
         }
         append_to_csv(csv_data, config.CSV_FILE_PATH)
 
@@ -129,7 +144,7 @@ def index():
                         "partner_name": form.company.data,
                         "country_id": form.country.data,
                         "phone": form.phone.data,
-                        "description": form.notes.data,
+                        "description": f"{form.notes.data}<br><br>APPUiO Voucher Code: {voucher_code}",
                         "campaign_id": config.CAMPAIGN_ID,
                         "source_id": config.SOURCE_ID,
                         "tag_ids": [(4, config.TAG_ID)],
@@ -140,14 +155,50 @@ def index():
                 logging.error(f"Couldn't create Lead in Odoo: {e}")
 
         if config.PRINTING_ENABLED:
-            name_splitted = form.name.data.replace(" ", "\n")
-            label_text = f"{config.LABEL_HEADER}\n" "☺☺☺\n" f"{name_splitted}"
+            # Label to put into the raffle box
+            label_raffle_html = f"""\
+            <h1>{config.LABEL_HEADER}</h1>
+            {form.name.data}
+            """
+
+            # Label to take home
+            label_voucher_css = """
+            * {
+                text-align: center;
+            }
+            img {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                width: 50%;
+            }
+            """
+            label_voucher_html = f"""\
+            <p><img src="appuio.png"></p>
+            <p>Hi {form.name.data}, your personal voucher code to try out APPUiO:</p>
+            <p><strong>{voucher_code}</strong></p>
+            <p>Register here: https://register.appuio.ch/</p>
+            """
+            label_raffle_file = "label_raffle.png"
+
+            hti = Html2Image()
+            hti.load_file("contactform/static/images/appuio.png")
+            hti.size = (590, 250)
+            hti.screenshot(
+                html_str=label_voucher_html,
+                css_str=label_voucher_css,
+                save_as=label_raffle_file,
+            )
+
+            # name_splitted = form.name.data.replace(" ", "\n")
+            # label_text = f"{config.LABEL_HEADER}\n" "☺☺☺\n" f"{name_splitted}"
+
+            label_raffle_image = open(label_raffle_file, "rb")
 
             parameters = LabelParameters(
                 configuration=printer_config,
-                text=label_text,
+                image=label_raffle_image.read(),
                 label_size="54",
-                font_size=70,
             )
 
             qlr = generate_label(
