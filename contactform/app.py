@@ -15,6 +15,8 @@ from wtforms.fields import *
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_bootstrap import Bootstrap5
 from html2image import Html2Image
+import segno
+import urllib
 
 
 from brother_ql_web.configuration import (
@@ -155,6 +157,9 @@ def index():
                 logging.error(f"Couldn't create Lead in Odoo: {e}")
 
         if config.PRINTING_ENABLED:
+            label_raffle_filename = "label_raffle.png"
+            qr_code_filename = "appuio_voucher_qr.png"
+
             # Label to put into the raffle box
             label_raffle_html = f"""\
             <h1>{config.LABEL_HEADER}</h1>
@@ -166,34 +171,48 @@ def index():
             * {
                 text-align: center;
             }
-            img {
+            .logo {
                 display: block;
                 margin-left: auto;
                 margin-right: auto;
-                width: 50%;
+                width: 35%;
             }
             """
             label_voucher_html = f"""\
-            <p><img src="appuio.png"></p>
+            <p><img src="appuio.png" class="logo"></p>
             <p>Hi {form.name.data}, your personal voucher code to try out APPUiO:</p>
             <p><strong>{voucher_code}</strong></p>
-            <p>Register here: https://register.appuio.ch/</p>
+            <p>Register here: {config.APPUIO_SIGNUP_URL}</p>
+            <p><img src="{qr_code_filename}"></p>
             """
-            label_raffle_file = "label_raffle.png"
+
+            registration_url_parameters = (
+                f"?voucher={voucher_code}"
+                f"&name={urllib.parse.quote(form.name.data)}"
+                f"&company={urllib.parse.quote(form.company.data)}"
+                f"&email={urllib.parse.quote(form.email.data)}"
+                f"&phone={urllib.parse.quote(form.phone.data)}"
+            )
+            print(registration_url_parameters)
+            qrcode = segno.make_qr(
+                f"{config.APPUIO_SIGNUP_URL}{registration_url_parameters}"
+            )
+            qrcode.save(
+                qr_code_filename,
+                scale=3,
+            )
 
             hti = Html2Image()
             hti.load_file("contactform/static/images/appuio.png")
-            hti.size = (590, 250)
+            hti.load_file(qr_code_filename)
+            hti.size = (500, 500)
             hti.screenshot(
                 html_str=label_voucher_html,
                 css_str=label_voucher_css,
-                save_as=label_raffle_file,
+                save_as=label_raffle_filename,
             )
 
-            # name_splitted = form.name.data.replace(" ", "\n")
-            # label_text = f"{config.LABEL_HEADER}\n" "☺☺☺\n" f"{name_splitted}"
-
-            label_raffle_image = open(label_raffle_file, "rb")
+            label_raffle_image = open(label_raffle_filename, "rb")
 
             parameters = LabelParameters(
                 configuration=printer_config,
