@@ -661,6 +661,21 @@ testing = ["coverage", "eventlet", "gevent", "pytest", "pytest-cov"]
 tornado = ["tornado (>=0.2)"]
 
 [[package]]
+name = "html2image"
+version = "2.0.4.3"
+description = "Package acting as a wrapper around the headless mode of existing web browsers to generate images from URLs and from HTML+CSS strings or files."
+optional = false
+python-versions = ">=3.6,<4.0"
+files = [
+    {file = "html2image-2.0.4.3-py3-none-any.whl", hash = "sha256:e39bc1be8cb39bd36a1b9412d22f5db88d56e762f9ad3461124fa05fa7982945"},
+    {file = "html2image-2.0.4.3.tar.gz", hash = "sha256:878e69122eabf8263415784888c4366f04a8b301516fc5d13b9e0acf8db591e7"},
+]
+
+[package.dependencies]
+requests = "*"
+websocket-client = ">=1.0.0,<2.0.0"
+
+[[package]]
 name = "idna"
 version = "3.8"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -1351,4 +1366,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "a93325888edd2b6ed0934a55407893609d6eaab7f2698f884d3c7057a4d6d3dd"
+content-hash = "b5b8b666b7bea585067ec57f87f702dc8c486b572acaafde9fdc496fa5e1e566"

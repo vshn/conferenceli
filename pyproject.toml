@@ -19,6 +19,7 @@ kubernetes = "^30.0.0"
 flask-sse = "^1.0.0"
 blinkstick = "^1.2.0"
 gevent = "^24.2.1"
+html2image = "^2.0.4.3"
 
 
 [tool.poetry.group.dev.dependencies]
