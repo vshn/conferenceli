@@ -1,22 +1,16 @@
 import logging
-import random
 from flask import (
     Flask,
     render_template,
-    request,
-    jsonify,
     flash,
     redirect,
     url_for,
-    Response,
 )
 from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_bootstrap import Bootstrap5
-from html2image import Html2Image
-import segno
-import urllib
+from label_voucher import print_voucher
 
 
 from brother_ql_web.configuration import (
@@ -27,14 +21,6 @@ from brother_ql_web.configuration import (
     LabelConfiguration,
     WebsiteConfiguration,
 )
-from brother_ql_web.labels import (
-    LabelParameters,
-    create_label_image,
-    image_to_png_bytes,
-    generate_label,
-    print_label,
-)
-from brother_ql.backends.network import BrotherQLBackendNetwork
 
 from odoo_client import *
 from config import *
@@ -101,13 +87,6 @@ class ConfigForm(FlaskForm):
     submit = SubmitField("Save Changes")
 
 
-def randomWord(length=5):
-    consonants = "bcdfghjklmnpqrstvwxyz"
-    vowels = "aeiou"
-
-    return "".join(random.choice((consonants, vowels)[i % 2]) for i in range(length))
-
-
 @app.route("/", methods=["GET", "POST"])
 def index():
     form = LeadForm()
@@ -157,83 +136,13 @@ def index():
                 logging.error(f"Couldn't create Lead in Odoo: {e}")
 
         if config.PRINTING_ENABLED:
-            label_raffle_filename = "label_raffle.png"
-            qr_code_filename = "appuio_voucher_qr.png"
 
-            # Label to put into the raffle box
-            label_raffle_html = f"""\
-            <h1>{config.LABEL_HEADER}</h1>
-            {form.name.data}
-            """
-
-            # Label to take home
-            label_voucher_css = """
-            * {
-                text-align: center;
-            }
-            .logo {
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-                width: 35%;
-            }
-            """
-            label_voucher_html = f"""\
-            <p><img src="appuio.png" class="logo"></p>
-            <p>Hi {form.name.data}, your personal voucher code to try out APPUiO:</p>
-            <p><strong>{voucher_code}</strong></p>
-            <p>Register here: {config.APPUIO_SIGNUP_URL}</p>
-            <p><img src="{qr_code_filename}"></p>
-            """
-
-            registration_url_parameters = (
-                f"?voucher={voucher_code}"
-                f"&name={urllib.parse.quote(form.name.data)}"
-                f"&company={urllib.parse.quote(form.company.data)}"
-                f"&email={urllib.parse.quote(form.email.data)}"
-                f"&phone={urllib.parse.quote(form.phone.data)}"
+            print_voucher(
+                form=form,
+                voucher_code=voucher_code,
+                config=config,
+                printer_config=printer_config,
             )
-            print(registration_url_parameters)
-            qrcode = segno.make_qr(
-                f"{config.APPUIO_SIGNUP_URL}{registration_url_parameters}"
-            )
-            qrcode.save(
-                qr_code_filename,
-                scale=3,
-            )
-
-            hti = Html2Image()
-            hti.load_file("contactform/static/images/appuio.png")
-            hti.load_file(qr_code_filename)
-            hti.size = (500, 500)
-            hti.screenshot(
-                html_str=label_voucher_html,
-                css_str=label_voucher_css,
-                save_as=label_raffle_filename,
-            )
-
-            label_raffle_image = open(label_raffle_filename, "rb")
-
-            parameters = LabelParameters(
-                configuration=printer_config,
-                image=label_raffle_image.read(),
-                label_size="54",
-            )
-
-            qlr = generate_label(
-                parameters=parameters,
-                configuration=printer_config,
-                save_image_to="sample-out.png" if config.LOG_LEVEL == "DEBUG" else None,
-            )
-            try:
-                print_label(
-                    parameters=parameters,
-                    qlr=qlr,
-                    configuration=printer_config,
-                    backend_class=BrotherQLBackendNetwork,
-                )
-            except Exception as e:
-                flash(f"Printing failed: {e}", "error")
 
         flash("Thanks for submitting", "success")
         return redirect(url_for("index"))

@@ -1,5 +1,6 @@
 import csv
 import os
+import random
 
 from flask import Response, request
 from functools import wraps
@@ -62,3 +63,10 @@ def requires_auth(f):
         return f(*args, **kwargs)
 
     return decorated
+
+
+def randomWord(length=5):
+    consonants = "bcdfghjklmnpqrstvwxyz"
+    vowels = "aeiou"
+
+    return "".join(random.choice((consonants, vowels)[i % 2]) for i in range(length))
