@@ -11,6 +11,7 @@ from wtforms.fields import *
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_bootstrap import Bootstrap5
 from label_voucher import print_voucher
+from label_raffle import print_raffle
 
 
 from brother_ql_web.configuration import (
@@ -143,6 +144,8 @@ def index():
                 config=config,
                 printer_config=printer_config,
             )
+
+            print_raffle(form=form, config=config, printer_config=printer_config)
 
         flash("Thanks for submitting", "success")
         return redirect(url_for("index"))

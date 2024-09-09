@@ -13,10 +13,10 @@ from brother_ql.backends.network import BrotherQLBackendNetwork
 
 
 def print_voucher(form, voucher_code, config, printer_config):
-    label_voucher_filename = "label_voucher.png"
+    label_filename = "label_voucher.png"
     qr_code_filename = "appuio_voucher_qr.png"
 
-    label_voucher_css = """
+    label_css = """
     * {
         text-align: center;
     }
@@ -27,7 +27,7 @@ def print_voucher(form, voucher_code, config, printer_config):
         width: 35%;
     }
     """
-    label_voucher_html = f"""\
+    label_html = f"""\
     <p><img src="appuio.png" class="logo"></p>
     <p>Hi {form.name.data}, your personal voucher code to try out APPUiO:</p>
     <p><strong>{voucher_code}</strong></p>
@@ -53,16 +53,16 @@ def print_voucher(form, voucher_code, config, printer_config):
     hti.load_file(qr_code_filename)
     hti.size = (500, 500)
     hti.screenshot(
-        html_str=label_voucher_html,
-        css_str=label_voucher_css,
-        save_as=label_voucher_filename,
+        html_str=label_html,
+        css_str=label_css,
+        save_as=label_filename,
     )
 
-    label_voucher_image = open(label_voucher_filename, "rb")
+    label_image = open(label_filename, "rb")
 
     parameters = LabelParameters(
         configuration=printer_config,
-        image=label_voucher_image.read(),
+        image=label_image.read(),
         label_size="54",
     )
 
@@ -81,4 +81,4 @@ def print_voucher(form, voucher_code, config, printer_config):
             backend_class=BrotherQLBackendNetwork,
         )
     except Exception as e:
-        flash(f"Printing failed: {e}", "error")
+        flash(f"Printing of voucher failed: {e}", "error")
