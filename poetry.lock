@@ -1197,6 +1197,17 @@ files = [
 pyasn1 = ">=0.1.3"
 
 [[package]]
+name = "segno"
+version = "1.6.1"
+description = "QR Code and Micro QR Code generator for Python"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "segno-1.6.1-py3-none-any.whl", hash = "sha256:e90c6ff82c633f757a96d4b1fb06cc932589b5237f33be653f52252544ac64df"},
+    {file = "segno-1.6.1.tar.gz", hash = "sha256:f23da78b059251c36e210d0cf5bfb1a9ec1604ae6e9f3d42f9a7c16d306d847e"},
+]
+
+[[package]]
 name = "setuptools"
 version = "74.1.2"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -1366,4 +1377,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b5b8b666b7bea585067ec57f87f702dc8c486b572acaafde9fdc496fa5e1e566"
+content-hash = "5a0e727c7bc99cabbf2dc55518ec05c6c439bbf74b972bee1a30ee0081fb6426"
