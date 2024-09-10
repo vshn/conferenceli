@@ -24,14 +24,23 @@ RUN apt-get update && \
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
-    PYTHONPATH="/conferenceli" \
+    PYTHONPATH="/podstatus" \
     GUNICORN_CMD_ARGS="--workers=1 --bind=unix:/app/gunicorn.sock --access-logfile=-"
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-COPY podstatus ./conferenceli
+COPY podstatus ./podstatus
 COPY nginx.conf /etc/nginx/nginx.conf
+
+RUN set -x && \
+    useradd -ms /bin/bash podstatus && \
+    mkdir -p /opt/data && \
+    ls -Alh /opt/data && \
+    chown -R podstatus:root /app /opt/data /var/log/nginx /var/lib/nginx && \
+    chmod -R g=u /app /opt/data /var/log/nginx /var/lib/nginx
+
+USER podstatus:root
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "nginx && gunicorn -k gevent conferenceli.app:app"]
+CMD ["sh", "-c", "nginx && gunicorn -k gevent podstatus.app:app"]
