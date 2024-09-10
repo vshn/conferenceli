@@ -15,8 +15,8 @@ from brother_ql.backends.network import BrotherQLBackendNetwork
 
 
 def print_voucher(form, voucher_code, config, printer_config):
-    label_filename = "label_voucher.png"
-    qr_code_filename = "appuio_voucher_qr.png"
+    label_filename = "/tmp/label_voucher.png"
+    qr_code_filename = "/tmp/appuio_voucher_qr.png"
 
     label_css = """
     body, html {
