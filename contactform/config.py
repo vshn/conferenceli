@@ -44,6 +44,9 @@ class Config:
         self.APPUIO_SIGNUP_URL = self.get_env_var(
             "APPUIO_SIGNUP_URL", "https://www.appuio.ch/sign-up"
         )
+        self.APPUIO_LOGO_PATH = self.get_env_var(
+            "APPUIO_LOGO_PATH", "/conferenceli/static/images/appuio-bw.png"
+        )
         self.TAG_ID = None
         self.CAMPAIGN_ID = None
         self.SOURCE_ID = None

@@ -63,7 +63,7 @@ def print_voucher(form, voucher_code, config, printer_config):
     )
 
     hti = Html2Image(size=(590, 1050))
-    hti.load_file("contactform/static/images/appuio-bw.png")
+    hti.load_file(config.APPUIO_LOGO_PATH)
     hti.load_file(qr_code_filename)
     hti.browser.print_command = True if config.LOG_LEVEL == "DEBUG" else False
     hti.screenshot(
