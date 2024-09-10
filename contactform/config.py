@@ -27,6 +27,12 @@ class Config:
         self.PRINTING_ENABLED = (
             self.get_env_var("PRINTING_ENABLED", "true").lower() == "true"
         )
+        self.PRINT_APPUIO_VOUCHER = (
+            self.get_env_var("PRINT_APPUIO_VOUCHER", "true").lower() == "true"
+        )
+        self.PRINT_RAFFLE_TICKET = (
+            self.get_env_var("PRINT_APPUIO_VOUCHER", "true").lower() == "true"
+        )
         self.ODOO_CREATELEAD_ENABLED = (
             self.get_env_var("ODOO_CREATELEAD_ENABLED", "true").lower() == "true"
         )
