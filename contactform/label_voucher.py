@@ -62,7 +62,15 @@ def print_voucher(form, voucher_code, config, printer_config):
         scale=5,
     )
 
-    hti = Html2Image(size=(590, 1050), output_path="/tmp")
+    hti = Html2Image(
+        size=(590, 1050),
+        output_path="/tmp",
+        custom_flags=[
+            "--default-background-color=000000",
+            "--hide-scrollbars",
+            "--no-sandbox",
+        ],
+    )
     hti.load_file(config.APPUIO_LOGO_PATH)
     hti.load_file(qr_code_filename)
     hti.browser.print_command = True if config.LOG_LEVEL == "DEBUG" else False
@@ -72,7 +80,7 @@ def print_voucher(form, voucher_code, config, printer_config):
         save_as=label_filename,
     )
 
-    label_image = open(f"/tmp/html2image/{label_filename}", "rb")
+    label_image = open(f"/tmp/{label_filename}", "rb")
 
     parameters = LabelParameters(
         configuration=printer_config,

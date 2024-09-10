@@ -37,14 +37,22 @@ def print_raffle(form, config, printer_config):
     </div>
     """
 
-    hti = Html2Image(size=(590, 300), output_path="/tmp")
+    hti = Html2Image(
+        size=(590, 300),
+        output_path="/tmp",
+        custom_flags=[
+            "--default-background-color=000000",
+            "--hide-scrollbars",
+            "--no-sandbox",
+        ],
+    )
     hti.screenshot(
         html_str=label_html,
         css_str=label_css,
         save_as=label_filename,
     )
 
-    label_image = open(f"/tmp/html2image/{label_filename}", "rb")
+    label_image = open(f"/tmp/{label_filename}", "rb")
 
     parameters = LabelParameters(
         configuration=printer_config,
