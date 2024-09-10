@@ -27,14 +27,23 @@ class Config:
         self.PRINTING_ENABLED = (
             self.get_env_var("PRINTING_ENABLED", "true").lower() == "true"
         )
+        self.PRINT_APPUIO_VOUCHER = (
+            self.get_env_var("PRINT_APPUIO_VOUCHER", "true").lower() == "true"
+        )
+        self.PRINT_RAFFLE_TICKET = (
+            self.get_env_var("PRINT_APPUIO_VOUCHER", "true").lower() == "true"
+        )
         self.ODOO_CREATELEAD_ENABLED = (
             self.get_env_var("ODOO_CREATELEAD_ENABLED", "true").lower() == "true"
         )
         self.CONFIG_FILE_PATH = self.get_env_var("CONFIG_FILE_PATH", "config.json")
         self.BASIC_AUTH_USERNAME = self.get_env_var("BASIC_AUTH_USERNAME")
         self.BASIC_AUTH_PASSWORD = self.get_env_var("BASIC_AUTH_PASSWORD")
-        self.LABEL_FONT_FAMILY = self.get_env_var("LABEL_FONT_FAMILY","DejaVu Sans")
-        self.LABEL_FONT_STYLE = self.get_env_var("LABEL_FONT_STYLE","Book")
+        self.LABEL_FONT_FAMILY = self.get_env_var("LABEL_FONT_FAMILY", "DejaVu Sans")
+        self.LABEL_FONT_STYLE = self.get_env_var("LABEL_FONT_STYLE", "Book")
+        self.APPUIO_SIGNUP_URL = self.get_env_var(
+            "APPUIO_SIGNUP_URL", "https://www.appuio.ch/sign-up"
+        )
         self.TAG_ID = None
         self.CAMPAIGN_ID = None
         self.SOURCE_ID = None

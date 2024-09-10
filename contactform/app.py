@@ -2,17 +2,16 @@ import logging
 from flask import (
     Flask,
     render_template,
-    request,
-    jsonify,
     flash,
     redirect,
     url_for,
-    Response,
 )
 from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_bootstrap import Bootstrap5
+from label_voucher import print_voucher
+from label_raffle import print_raffle
 
 
 from brother_ql_web.configuration import (
@@ -23,14 +22,6 @@ from brother_ql_web.configuration import (
     LabelConfiguration,
     WebsiteConfiguration,
 )
-from brother_ql_web.labels import (
-    LabelParameters,
-    create_label_image,
-    image_to_png_bytes,
-    generate_label,
-    print_label,
-)
-from brother_ql.backends.network import BrotherQLBackendNetwork
 
 from odoo_client import *
 from config import *
@@ -65,12 +56,6 @@ printer_config = Configuration(
     label=LabelConfiguration(
         default_size="54",
         default_orientation="standard",
-        default_font_size=70,
-        default_fonts=[
-            Font(family="IBM Plex Sans", style="Bold"),
-            Font(family="Source Code Pro", style="Bold"),
-        ],
-        default_font=Font(family=config.LABEL_FONT_FAMILY, style=config.LABEL_FONT_STYLE),
     ),
     website=WebsiteConfiguration,
 )
@@ -100,6 +85,9 @@ def index():
     form = LeadForm()
 
     if form.validate_on_submit():
+        # Generate a random voucher code for APPUiO
+        voucher_code = random_word(6)
+
         # Append data to CSV file
         csv_data = {
             "Opportunity": f"Event Lead: {form.name.data}",
@@ -113,6 +101,7 @@ def index():
             "Tags": config.TAG_NAME,
             "Campaign": config.CAMPAIGN_NAME,
             "Source": config.SOURCE_NAME,
+            "VoucherCode": voucher_code,
         }
         append_to_csv(csv_data, config.CSV_FILE_PATH)
 
@@ -129,7 +118,7 @@ def index():
                         "partner_name": form.company.data,
                         "country_id": form.country.data,
                         "phone": form.phone.data,
-                        "description": form.notes.data,
+                        "description": f"{form.notes.data}<br><br>APPUiO Voucher Code: {voucher_code}",
                         "campaign_id": config.CAMPAIGN_ID,
                         "source_id": config.SOURCE_ID,
                         "tag_ids": [(4, config.TAG_ID)],
@@ -140,30 +129,17 @@ def index():
                 logging.error(f"Couldn't create Lead in Odoo: {e}")
 
         if config.PRINTING_ENABLED:
-            name_splitted = form.name.data.replace(" ", "\n")
-            label_text = f"{config.LABEL_HEADER}\n" "☺☺☺\n" f"{name_splitted}"
 
-            parameters = LabelParameters(
-                configuration=printer_config,
-                text=label_text,
-                label_size="54",
-                font_size=70,
-            )
-
-            qlr = generate_label(
-                parameters=parameters,
-                configuration=printer_config,
-                save_image_to="sample-out.png" if config.LOG_LEVEL == "DEBUG" else None,
-            )
-            try:
-                print_label(
-                    parameters=parameters,
-                    qlr=qlr,
-                    configuration=printer_config,
-                    backend_class=BrotherQLBackendNetwork,
+            if config.PRINT_APPUIO_VOUCHER:
+                print_voucher(
+                    form=form,
+                    voucher_code=voucher_code,
+                    config=config,
+                    printer_config=printer_config,
                 )
-            except Exception as e:
-                flash(f"Printing failed: {e}", "error")
+
+            if config.PRINT_RAFFLE_TICKET:
+                print_raffle(form=form, config=config, printer_config=printer_config)
 
         flash("Thanks for submitting", "success")
         return redirect(url_for("index"))

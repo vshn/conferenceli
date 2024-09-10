@@ -1,5 +1,6 @@
 import csv
 import os
+import random
 
 from flask import Response, request
 from functools import wraps
@@ -23,6 +24,7 @@ def append_to_csv(data, file_path):
             "Tags",
             "Campaign",
             "Source",
+            "VoucherCode",
         ]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
@@ -61,3 +63,10 @@ def requires_auth(f):
         return f(*args, **kwargs)
 
     return decorated
+
+
+def random_word(length=5):
+    consonants = "bcdfghjklmnpqrstvwxyz"
+    vowels = "aeiou"
+
+    return "".join(random.choice((consonants, vowels)[i % 2]) for i in range(length))

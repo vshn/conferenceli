@@ -231,7 +231,7 @@ command_chaos=sh -c "notify-send -t 2000 $(curl -s -u username:password http://l
 ### Contactform with Printer
 
 The Contactform app lives in the `contactform/` folder.
-It serves two main purposes:
+It serves these purposes:
 
 * Collecting leads at the conference booth and store them in Odoo as CRM lead
 * Printing of labels for all kind of fun, for example for the booth raffle
@@ -243,7 +243,17 @@ It allows configuration of the Odoo campaign name, the label header and can opti
 As the application runs directly on the Raspberry Pi, it needs to be available on the Internet, so that a booth visitor can directly access it.
 This is made possible with FRP, see next section.
 
-The label printing was made possible thanks to the fantastic [brother_ql_web](https://github.com/FriedrichFroebel/brother_ql_web/) Python module.
+The label printing is made possible thanks to the fantastic [brother_ql_web](https://github.com/FriedrichFroebel/brother_ql_web/) Python module.
+
+#### APPUiO Voucher
+
+The app generates an APPUiO Voucher and prints it on a label.
+The generated QR code links to https://www.appuio.ch/sign-up with URL parameters to prefill the form fields for user convenience:
+
+`?voucher=abc123&company=XYZ&name=John%20Doe&email=john@example.com&phone=123456789`
+
+For this form field pre-filling to work, a small JavaScript snippet (`hack/field-values-from-url.js`) needs to be available in the APPUiO website.
+It is added into a `<script>` tag via the theme configuration in Odoo.
 
 ### Connectivity from the Internet
 
