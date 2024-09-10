@@ -11,7 +11,7 @@ from brother_ql.backends.network import BrotherQLBackendNetwork
 
 
 def print_raffle(form, config, printer_config):
-    label_filename = "/tmp/label_raffle.png"
+    label_filename = "label_raffle.png"
 
     label_css = """
     body, html {
@@ -37,15 +37,14 @@ def print_raffle(form, config, printer_config):
     </div>
     """
 
-    hti = Html2Image()
-    hti.size = (590, 300)
+    hti = Html2Image(size=(590, 300), output_path="/tmp")
     hti.screenshot(
         html_str=label_html,
         css_str=label_css,
         save_as=label_filename,
     )
 
-    label_image = open(label_filename, "rb")
+    label_image = open(f"/tmp/{label_filename}", "rb")
 
     parameters = LabelParameters(
         configuration=printer_config,

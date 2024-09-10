@@ -15,8 +15,8 @@ from brother_ql.backends.network import BrotherQLBackendNetwork
 
 
 def print_voucher(form, voucher_code, config, printer_config):
-    label_filename = "/tmp/label_voucher.png"
-    qr_code_filename = "/tmp/appuio_voucher_qr.png"
+    label_filename = "label_voucher.png"
+    qr_code_filename = "appuio_voucher_qr.png"
 
     label_css = """
     body, html {
@@ -62,7 +62,7 @@ def print_voucher(form, voucher_code, config, printer_config):
         scale=5,
     )
 
-    hti = Html2Image(size=(590, 1050))
+    hti = Html2Image(size=(590, 1050), output_path="/tmp")
     hti.load_file(config.APPUIO_LOGO_PATH)
     hti.load_file(qr_code_filename)
     hti.browser.print_command = True if config.LOG_LEVEL == "DEBUG" else False
@@ -72,7 +72,7 @@ def print_voucher(form, voucher_code, config, printer_config):
         save_as=label_filename,
     )
 
-    label_image = open(label_filename, "rb")
+    label_image = open(f"/tmp/{label_filename}", "rb")
 
     parameters = LabelParameters(
         configuration=printer_config,
