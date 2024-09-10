@@ -1,5 +1,7 @@
 import segno
 import urllib
+import logging
+
 
 from flask import flash
 from wtforms.fields import *
@@ -17,22 +19,34 @@ def print_voucher(form, voucher_code, config, printer_config):
     qr_code_filename = "appuio_voucher_qr.png"
 
     label_css = """
-    * {
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        font-family: sans-serif;
         text-align: center;
     }
     .logo {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        width: 35%;
+        width: 70%;
+    }
+    .text {
+        font-size: 45px;
+    }
+    .text_small {
+        font-size: 35px;
     }
     """
     label_html = f"""\
-    <p><img src="appuio.png" class="logo"></p>
-    <p>Hi {form.name.data}, your personal voucher code to try out APPUiO:</p>
-    <p><strong>{voucher_code}</strong></p>
-    <p>Register here: {config.APPUIO_SIGNUP_URL}</p>
-    <p><img src="{qr_code_filename}"></p>
+    <div>
+        <p><img src="appuio-bw.png" class="logo"></p>
+        <p class="text">Hi {form.name.data}<p>
+        <p class="text">Your personal voucher code to try out APPUiO:</p>
+        <p class="text"><strong>{voucher_code}</strong></p>
+        <p class="text_small">Register here: {config.APPUIO_SIGNUP_URL}</p>
+        <p><img src="{qr_code_filename}"></p>
+    </div>
     """
 
     registration_url_parameters = (
@@ -45,13 +59,13 @@ def print_voucher(form, voucher_code, config, printer_config):
     qrcode = segno.make_qr(f"{config.APPUIO_SIGNUP_URL}{registration_url_parameters}")
     qrcode.save(
         qr_code_filename,
-        scale=3,
+        scale=5,
     )
 
-    hti = Html2Image()
-    hti.load_file("contactform/static/images/appuio.png")
+    hti = Html2Image(size=(590, 1050))
+    hti.load_file("contactform/static/images/appuio-bw.png")
     hti.load_file(qr_code_filename)
-    hti.size = (500, 500)
+    hti.browser.print_command = True if config.LOG_LEVEL == "DEBUG" else False
     hti.screenshot(
         html_str=label_html,
         css_str=label_css,
@@ -64,8 +78,10 @@ def print_voucher(form, voucher_code, config, printer_config):
         configuration=printer_config,
         image=label_image.read(),
         label_size="54",
+        high_quality=True,
     )
 
+    logging.info(f"Printing voucher label for {form.name.data}")
     qlr = generate_label(
         parameters=parameters,
         configuration=printer_config,

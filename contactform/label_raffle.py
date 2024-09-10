@@ -1,3 +1,4 @@
+import logging
 from flask import flash
 from wtforms.fields import *
 from html2image import Html2Image
@@ -12,15 +13,35 @@ from brother_ql.backends.network import BrotherQLBackendNetwork
 def print_raffle(form, config, printer_config):
     label_filename = "label_raffle.png"
 
+    label_css = """
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        font-family: sans-serif;
+        text-align: center;
+    }
+    h1 {
+        font-size: 70px;
+    }
+    p {
+        font-size: 35px;
+    }
+    """
     label_html = f"""\
-    <h1>{form.name.data}</h1>
-    <p><strong>yay</strong></p>
+    <div>
+        <h1>{form.name.data}</h1>
+        <p>{config.LABEL_HEADER}</p>
+    </div>
     """
 
     hti = Html2Image()
-    hti.size = (500, 200)
+    hti.size = (590, 300)
     hti.screenshot(
         html_str=label_html,
+        css_str=label_css,
         save_as=label_filename,
     )
 
@@ -32,6 +53,7 @@ def print_raffle(form, config, printer_config):
         label_size="54",
     )
 
+    logging.info(f"Printing raffle label for {form.name.data}")
     qlr = generate_label(
         parameters=parameters,
         configuration=printer_config,

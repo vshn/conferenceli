@@ -56,14 +56,6 @@ printer_config = Configuration(
     label=LabelConfiguration(
         default_size="54",
         default_orientation="standard",
-        default_font_size=70,
-        default_fonts=[
-            Font(family="IBM Plex Sans", style="Bold"),
-            Font(family="Source Code Pro", style="Bold"),
-        ],
-        default_font=Font(
-            family=config.LABEL_FONT_FAMILY, style=config.LABEL_FONT_STYLE
-        ),
     ),
     website=WebsiteConfiguration,
 )
