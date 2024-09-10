@@ -72,7 +72,7 @@ def print_voucher(form, voucher_code, config, printer_config):
         save_as=label_filename,
     )
 
-    label_image = open(f"/tmp/{label_filename}", "rb")
+    label_image = open(f"/tmp/html2image/{label_filename}", "rb")
 
     parameters = LabelParameters(
         configuration=printer_config,
