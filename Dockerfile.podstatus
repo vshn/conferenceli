@@ -16,7 +16,7 @@ RUN touch README.md
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root
 
 ### RUNTIME
-FROM python:3.12-bookworm as runtime
+FROM python:3.12-slim-bookworm as runtime
 
 RUN apt-get update && \
     apt-get install -y nginx python3-libusb1 && \
