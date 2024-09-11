@@ -38,7 +38,7 @@ def print_raffle(form, config, printer_config):
     """
 
     hti = Html2Image(
-        size=(590, 350),
+        size=(590, 400),
         custom_flags=[
             "--default-background-color=FFFFFF",
             "--hide-scrollbars",

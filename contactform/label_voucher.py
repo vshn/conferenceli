@@ -63,7 +63,7 @@ def print_voucher(form, voucher_code, config, printer_config):
     )
 
     hti = Html2Image(
-        size=(590, 1050),
+        size=(590, 1100),
         custom_flags=[
             "--default-background-color=FFFFFF",
             "--hide-scrollbars",
