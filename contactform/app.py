@@ -138,7 +138,12 @@ def index():
             )
 
         if config.PRINT_RAFFLE_TICKET:
-            print_raffle(form=form, config=config, printer_config=printer_config)
+            print_raffle(
+                form=form,
+                voucher_code=voucher_code,
+                config=config,
+                printer_config=printer_config,
+            )
 
         flash("Thanks for submitting", "success")
         return redirect(url_for("index"))

@@ -10,7 +10,7 @@ from brother_ql_web.labels import (
 from brother_ql.backends.network import BrotherQLBackendNetwork
 
 
-def print_raffle(form, config, printer_config):
+def print_raffle(form, voucher_code, config, printer_config):
     label_filename = "label_raffle.png"
 
     label_css = """
@@ -26,14 +26,18 @@ def print_raffle(form, config, printer_config):
     h1 {
         font-size: 70px;
     }
-    p {
+    .big {
         font-size: 35px;
+    }
+    .small {
+        font-size: 25px;
     }
     """
     label_html = f"""\
     <div>
         <h1>{form.name.data}</h1>
-        <p>{config.LABEL_HEADER}</p>
+        <p class="big">{config.LABEL_HEADER}</p>
+        <p class="small">{voucher_code}</p>
     </div>
     """
 
