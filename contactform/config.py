@@ -24,14 +24,11 @@ class Config:
         self.SOURCE_NAME = self.get_env_var("SOURCE_NAME")
         self.CSV_FILE_PATH = self.get_env_var("CSV_FILE_PATH")
         self.LABEL_HEADER = self.get_env_var("LABEL_HEADER", "Welcome")
-        self.PRINTING_ENABLED = (
-            self.get_env_var("PRINTING_ENABLED", "true").lower() == "true"
-        )
         self.PRINT_APPUIO_VOUCHER = (
             self.get_env_var("PRINT_APPUIO_VOUCHER", "true").lower() == "true"
         )
         self.PRINT_RAFFLE_TICKET = (
-            self.get_env_var("PRINT_APPUIO_VOUCHER", "true").lower() == "true"
+            self.get_env_var("PRINT_RAFFLE_TICKET", "true").lower() == "true"
         )
         self.ODOO_CREATELEAD_ENABLED = (
             self.get_env_var("ODOO_CREATELEAD_ENABLED", "true").lower() == "true"
@@ -80,8 +77,11 @@ class Config:
                     "CAMPAIGN_NAME", self.CAMPAIGN_NAME
                 )
                 self.LABEL_HEADER = config_data.get("LABEL_HEADER", self.LABEL_HEADER)
-                self.PRINTING_ENABLED = config_data.get(
-                    "PRINTING_ENABLED", self.PRINTING_ENABLED
+                self.PRINT_APPUIO_VOUCHER = config_data.get(
+                    "PRINT_APPUIO_VOUCHER", self.PRINT_APPUIO_VOUCHER
+                )
+                self.PRINT_RAFFLE_TICKET = config_data.get(
+                    "PRINT_RAFFLE_TICKET", self.PRINT_RAFFLE_TICKET
                 )
                 self.ODOO_CREATELEAD_ENABLED = config_data.get(
                     "ODOO_CREATELEAD_ENABLED", self.ODOO_CREATELEAD_ENABLED
@@ -91,7 +91,8 @@ class Config:
 def save_config(config):
     config_data = {
         "CAMPAIGN_NAME": config.CAMPAIGN_NAME,
-        "PRINTING_ENABLED": config.PRINTING_ENABLED,
+        "PRINT_APPUIO_VOUCHER": config.PRINT_APPUIO_VOUCHER,
+        "PRINT_RAFFLE_TICKET": config.PRINT_RAFFLE_TICKET,
         "ODOO_CREATELEAD_ENABLED": config.ODOO_CREATELEAD_ENABLED,
         "LABEL_HEADER": config.LABEL_HEADER,
     }

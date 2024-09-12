@@ -75,7 +75,8 @@ class LeadForm(FlaskForm):
 class ConfigForm(FlaskForm):
     campaign_name = StringField("Campaign Name *", validators=[DataRequired()])
     label_header = StringField("Label Header *", validators=[DataRequired()])
-    printing_enabled = BooleanField("Printing Enabled")
+    print_appuio_voucher = BooleanField("Print APPUiO Voucher")
+    print_raffle_ticket = BooleanField("Print Raffle Ticket")
     odoo_leadcreation_enabled = BooleanField("Odoo Lead Creation Enabled")
     submit = SubmitField("Save Changes")
 
@@ -128,18 +129,16 @@ def index():
             except Exception as e:
                 logging.error(f"Couldn't create Lead in Odoo: {e}")
 
-        if config.PRINTING_ENABLED:
+        if config.PRINT_APPUIO_VOUCHER:
+            print_voucher(
+                form=form,
+                voucher_code=voucher_code,
+                config=config,
+                printer_config=printer_config,
+            )
 
-            if config.PRINT_APPUIO_VOUCHER:
-                print_voucher(
-                    form=form,
-                    voucher_code=voucher_code,
-                    config=config,
-                    printer_config=printer_config,
-                )
-
-            if config.PRINT_RAFFLE_TICKET:
-                print_raffle(form=form, config=config, printer_config=printer_config)
+        if config.PRINT_RAFFLE_TICKET:
+            print_raffle(form=form, config=config, printer_config=printer_config)
 
         flash("Thanks for submitting", "success")
         return redirect(url_for("index"))
@@ -155,7 +154,8 @@ def index():
 def config_endpoint():
     form = ConfigForm(
         campaign_name=config.CAMPAIGN_NAME,
-        printing_enabled=config.PRINTING_ENABLED,
+        print_appuio_voucher=config.PRINT_APPUIO_VOUCHER,
+        print_raffle_ticket=config.PRINT_RAFFLE_TICKET,
         label_header=config.LABEL_HEADER,
         odoo_leadcreation_enabled=config.ODOO_CREATELEAD_ENABLED,
     )
@@ -166,7 +166,8 @@ def config_endpoint():
                 "utm.campaign", form.campaign_name.data
             )
             config.CAMPAIGN_NAME = form.campaign_name.data
-            config.PRINTING_ENABLED = form.printing_enabled.data
+            config.PRINT_APPUIO_VOUCHER = form.print_appuio_voucher.data
+            config.PRINT_RAFFLE_TICKET = form.print_raffle_ticket.data
             config.ODOO_CREATELEAD_ENABLED = form.odoo_leadcreation_enabled.data
             config.LABEL_HEADER = form.label_header.data
             save_config(config)
