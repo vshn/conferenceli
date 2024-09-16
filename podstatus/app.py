@@ -119,8 +119,9 @@ def create_app():
                     pod_index = pod.metadata.labels.get(
                         "statefulset.kubernetes.io/pod-name", "unknown"
                     )
+                    pod_node = pod.spec.node_name if pod.spec.node_name else "unknown"
 
-                    yield f'data: {{"name": "{pod_name}", "status": "{pod_status}", "index": "{pod_index}"}}\n\n'
+                    yield f'data: {{"name": "{pod_name}", "status": "{pod_status}", "index": "{pod_index}", "node": "{pod_node}"}}\n\n'
             except Exception as e:
                 logging.error(f"Error watching pods: {e}")
 

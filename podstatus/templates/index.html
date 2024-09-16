@@ -24,6 +24,7 @@
                 const podName = podStatus.name;
                 const podStatusValue = podStatus.status;
                 const podIndex = podStatus.index;
+                const podNode = podStatus.node;
 
                 if (firstEvent) {
                     document.getElementById('pod-status').innerHTML = '';
@@ -38,7 +39,7 @@
                     document.getElementById('pod-status').appendChild(podElement);
                 }
 
-                podElement.innerHTML = `<strong>${podName}</strong>: ${podStatusValue}`;
+                podElement.innerHTML = `<strong>${podName}</strong>: ${podStatusValue} on ${podNode}`;
                 podElement.style.backgroundColor = podStatusValue === 'Running' ? '#00bc8c' :
                     podStatusValue === 'Pending' ? '#f39c12' : '#e74c3c';
             };
