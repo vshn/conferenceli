@@ -115,11 +115,14 @@ def create_app():
                 ):
                     pod = event["object"]
                     pod_name = pod.metadata.name
-                    pod_status = pod.status.phase
                     pod_index = pod.metadata.labels.get(
                         "statefulset.kubernetes.io/pod-name", "unknown"
                     )
                     pod_node = pod.spec.node_name if pod.spec.node_name else "unknown"
+
+                    pod_status = pod.status.phase
+                    if pod.metadata.deletion_timestamp is not None:
+                        pod_status = "Terminating"
 
                     yield f'data: {{"name": "{pod_name}", "status": "{pod_status}", "index": "{pod_index}", "node": "{pod_node}"}}\n\n'
             except Exception as e:
