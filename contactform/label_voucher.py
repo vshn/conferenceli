@@ -55,8 +55,12 @@ def print_voucher(form, voucher_code, config, printer_config):
         f"&company={urllib.parse.quote(form.company.data)}"
         f"&email={urllib.parse.quote(form.email.data)}"
         f"&phone={urllib.parse.quote(form.phone.data)}"
+        f"&utm_campaign={urllib.parse.quote(config.CAMPAIGN_NAME)}"
+        f"&utm_source=Voucher"
     )
-    qrcode = segno.make_qr(f"{config.APPUIO_SIGNUP_URL}{registration_url_parameters}")
+    signup_url = f"{config.APPUIO_SIGNUP_URL}{registration_url_parameters}"
+    logging.debug(f"URL: {signup_url}")
+    qrcode = segno.make_qr(signup_url)
     qrcode.save(
         qr_code_filename,
         scale=5,
