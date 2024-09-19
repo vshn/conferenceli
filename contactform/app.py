@@ -81,11 +81,33 @@ class ConfigForm(FlaskForm):
     submit = SubmitField("Save Changes")
 
 
+def is_duplicate_submission(email, csv_file_path):
+    """Check if the email has already been submitted."""
+    try:
+        with open(csv_file_path, mode="r") as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                if row["Email"] == email:
+                    return True
+    except FileNotFoundError:
+        # If the CSV file does not exist, treat as no duplicates
+        pass
+    return False
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     form = LeadForm()
 
     if form.validate_on_submit():
+        # Check if the form submission is a duplicate
+        if is_duplicate_submission(form.email.data, config.CSV_FILE_PATH):
+            flash(
+                "You have already submitted the form. Duplicate submissions are not allowed.",
+                "warning",
+            )
+            return redirect(url_for("index"))
+
         # Generate a random voucher code for APPUiO
         voucher_code = random_word(6)
 
