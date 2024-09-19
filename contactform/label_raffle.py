@@ -42,7 +42,7 @@ def print_raffle(form, voucher_code, config, printer_config):
     """
 
     hti = Html2Image(
-        size=(590, 400),
+        size=(590, 500),
         custom_flags=[
             "--default-background-color=FFFFFF",
             "--hide-scrollbars",
