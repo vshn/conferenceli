@@ -10,6 +10,7 @@ from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_bootstrap import Bootstrap5
+from flask_caching import Cache
 from label_voucher import print_voucher
 from label_raffle import print_raffle
 
@@ -18,7 +19,6 @@ from brother_ql_web.configuration import (
     Configuration,
     ServerConfiguration,
     PrinterConfiguration,
-    Font,
     LabelConfiguration,
     WebsiteConfiguration,
 )
@@ -31,6 +31,9 @@ app = Flask(__name__)
 app.secret_key = config.FLASK_APP_SECRET_KEY
 csrf = CSRFProtect(app)
 bootstrap = Bootstrap5(app)
+
+# Initialize a cache to suppress duplicates
+cache = Cache(app, config={"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 300})
 
 # Basic styling
 app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "sandstone"
@@ -81,18 +84,14 @@ class ConfigForm(FlaskForm):
     submit = SubmitField("Save Changes")
 
 
-def is_duplicate_submission(email, csv_file_path):
-    """Check if the email has already been submitted."""
-    try:
-        with open(csv_file_path, mode="r") as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                if row["Email"] == email:
-                    return True
-    except FileNotFoundError:
-        # If the CSV file does not exist, treat as no duplicates
-        pass
-    return False
+def cache_submitted_email(email):
+    """Cache the submitted email to avoid duplicates."""
+    cache.set(email, True)
+
+
+def is_duplicate_submission(email):
+    """Check if the email has already been submitted using cache."""
+    return cache.get(email) is not None
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -100,8 +99,7 @@ def index():
     form = LeadForm()
 
     if form.validate_on_submit():
-        # Check if the form submission is a duplicate
-        if is_duplicate_submission(form.email.data, config.CSV_FILE_PATH):
+        if is_duplicate_submission(form.email.data):
             flash(
                 "You have already submitted the form. Duplicate submissions are not allowed.",
                 "warning",
@@ -127,6 +125,9 @@ def index():
             "VoucherCode": voucher_code,
         }
         append_to_csv(csv_data, config.CSV_FILE_PATH)
+
+        # Cache the submitted email to prevent future duplicates
+        cache_submitted_email(form.email.data)
 
         if config.ODOO_CREATELEAD_ENABLED:
             # Create lead in Odoo
