@@ -104,7 +104,7 @@ def save_config(config):
 def setup_logging(log_level):
     logging.basicConfig(
         level=logging.getLevelName(log_level),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        format="%(asctime)s [%(threadName)s] %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 

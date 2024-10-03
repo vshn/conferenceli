@@ -1,4 +1,5 @@
 import logging
+import threading
 from flask import (
     Flask,
     render_template,
@@ -18,7 +19,6 @@ from brother_ql_web.configuration import (
     Configuration,
     ServerConfiguration,
     PrinterConfiguration,
-    Font,
     LabelConfiguration,
     WebsiteConfiguration,
 )
@@ -151,29 +151,36 @@ def index():
             except Exception as e:
                 logging.error(f"Couldn't create Lead in Odoo: {e}")
 
+        # Extract necessary form data
+        name_data = form.name.data
+        company_data = form.company.data
+        email_data = form.email.data
+        phone_data = form.phone.data
+
         if config.PRINT_APPUIO_VOUCHER:
-            print_voucher(
-                form=form,
-                voucher_code=voucher_code,
-                config=config,
-                printer_config=printer_config,
-            )
+            threading.Thread(
+                target=print_voucher,
+                args=(
+                    name_data,
+                    company_data,
+                    email_data,
+                    phone_data,
+                    voucher_code,
+                    config,
+                    printer_config,
+                ),
+            ).start()
 
         if config.PRINT_RAFFLE_TICKET:
-            print_raffle(
-                form=form,
-                voucher_code=voucher_code,
-                config=config,
-                printer_config=printer_config,
-            )
+            threading.Thread(
+                target=print_raffle,
+                args=(name_data, voucher_code, config, printer_config),
+            ).start()
 
         flash("Thanks for submitting", "success")
-        return redirect(url_for("index"))
-
-    return render_template(
-        "form.html",
-        form=form,
-    )
+        return render_template("success.html")
+    else:
+        return render_template("form.html", form=form)
 
 
 @app.route("/config", methods=["GET", "POST"])
