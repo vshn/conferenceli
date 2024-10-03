@@ -1,6 +1,6 @@
 import logging
-from flask import flash
-from wtforms.fields import *
+import uuid
+import os
 from html2image import Html2Image
 from brother_ql_web.labels import (
     LabelParameters,
@@ -10,8 +10,9 @@ from brother_ql_web.labels import (
 from brother_ql.backends.network import BrotherQLBackendNetwork
 
 
-def print_raffle(form, voucher_code, config, printer_config):
-    label_filename = "label_raffle.png"
+def print_raffle(name_data, voucher_code, config, printer_config):
+    unique_id = uuid.uuid4().hex
+    label_filename = f"label_raffle_{unique_id}.png"
 
     label_css = """
     body, html {
@@ -35,42 +36,46 @@ def print_raffle(form, voucher_code, config, printer_config):
     """
     label_html = f"""\
     <div>
-        <h1>{form.name.data}</h1>
+        <h1>{name_data}</h1>
         <p class="big">{config.LABEL_HEADER}</p>
         <p class="small">{voucher_code}</p>
     </div>
     """
 
-    hti = Html2Image(
-        size=(590, 500),
-        custom_flags=[
-            "--default-background-color=FFFFFF",
-            "--hide-scrollbars",
-        ],
-    )
-    hti.screenshot(
-        html_str=label_html,
-        css_str=label_css,
-        save_as=label_filename,
-    )
-
-    label_image = open(label_filename, "rb")
-
-    parameters = LabelParameters(
-        configuration=printer_config,
-        image=label_image.read(),
-        label_size="54",
-    )
-
-    logging.info(f"Printing raffle label for {form.name.data}")
-    qlr = generate_label(
-        parameters=parameters,
-        configuration=printer_config,
-        save_image_to=(
-            "print-preview-raffle.png" if config.LOG_LEVEL == "DEBUG" else None
-        ),
-    )
     try:
+        # Generate image from HTML and CSS
+        hti = Html2Image(
+            size=(590, 500),
+            custom_flags=[
+                "--default-background-color=FFFFFF",
+                "--hide-scrollbars",
+            ],
+        )
+        hti.screenshot(
+            html_str=label_html,
+            css_str=label_css,
+            save_as=label_filename,
+        )
+
+        with open(label_filename, "rb") as label_image:
+            parameters = LabelParameters(
+                configuration=printer_config,
+                image=label_image.read(),
+                label_size="54",
+            )
+
+        logging.info(f"Printing raffle label for {name_data}")
+        preview_filename = (
+            f"print-preview-raffle_{unique_id}.png"
+            if config.LOG_LEVEL == "DEBUG"
+            else None
+        )
+        qlr = generate_label(
+            parameters=parameters,
+            configuration=printer_config,
+            save_image_to=preview_filename,
+        )
+
         print_label(
             parameters=parameters,
             qlr=qlr,
@@ -78,4 +83,14 @@ def print_raffle(form, voucher_code, config, printer_config):
             backend_class=BrotherQLBackendNetwork,
         )
     except Exception as e:
-        flash(f"Printing of raffle ticket failed: {e}", "error")
+        logging.error(f"Printing of raffle ticket failed for {name_data}: {e}")
+    finally:
+        # Clean up temporary files
+        if os.path.exists(label_filename):
+            os.remove(label_filename)
+        if (
+            config.LOG_LEVEL == "DEBUG"
+            and preview_filename
+            and os.path.exists(preview_filename)
+        ):
+            os.remove(preview_filename)
