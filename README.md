@@ -146,6 +146,8 @@ In addition to the main Raspberry Pi, there is an optional [PicoCluster](https:/
 The boards of the PicoCluster are installed as K3s nodes, so that we have more computing power.
 And because we want blinken lights, each of the boards have a [Pimoroni Blinkt!](https://shop.pimoroni.com/products/blinkt) attached.
 
+To properly shut down the cluster, execute the script `stopPicoCluster.sh` in the home directory.
+
 ### Blinkt!
 
 To get the Blinkt! up and running on a Raspberry Pi 5, the following manual steps are followed on each PicoCluster node:
@@ -259,3 +261,17 @@ It is added into a `<script>` tag via the theme configuration in Odoo.
 
 To allow connections from the Internet to the Raspberry Pi, the Raspberry Pi needs to be connected to a WLAN with Internet connectivity.
 It then uses [frp - fast reverse proxy](https://github.com/fatedier/frp) to tunnel connections.
+
+## Fog Machine
+
+There is a fog machine attached to a relay which is controlled via Raspberry Pi GPIOs.
+It's a [Micro Smoke Machine v2 from Costronica](https://costronica.com/).
+
+To control it, a small webserver is running locally.
+See `hack/relay-web-server.py` for the code.
+
+It's running as SystemD service:
+
+```
+systemctl status fog-relay-server.service
+```

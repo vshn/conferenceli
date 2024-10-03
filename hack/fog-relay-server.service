@@ -1,0 +1,10 @@
+[Unit]
+Description=Fog Relay Web Service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /home/tobru/relay-server.py
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
