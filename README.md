@@ -8,7 +8,8 @@ When attending conferences or Meetups, we bring some fancy hardware to attract p
 * A label printer which prints a booth raffle ticket
 
 ![Booth Setup](docs/booth1.jpg)
-![Demo Video](docs/appuioli-on-scnd.mp4)
+
+https://github.com/user-attachments/assets/253b828e-1091-4862-82ff-4eefc8c6a36d
 
 ## Hardware Setup
 
