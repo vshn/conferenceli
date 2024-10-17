@@ -135,13 +135,13 @@ pyusb = "*"
 
 [[package]]
 name = "brother-ql-web"
-version = "0.3.0"
+version = "0.4.0"
 description = "Simple label designer API and web API for Brother QL label printers"
 optional = false
-python-versions = "<4,>=3.8"
+python-versions = "<4,>=3.9"
 files = [
-    {file = "brother_ql_web-0.3.0-py3-none-any.whl", hash = "sha256:fb5fc25d7106b95b1da290eb90ea6eaff8094a452bee5f6d519831a56765b1bf"},
-    {file = "brother_ql_web-0.3.0.tar.gz", hash = "sha256:bb10ead7c17debca8bc31e15a4635996130c423f60615d568ae63c3cfe964d01"},
+    {file = "brother_ql_web-0.4.0-py3-none-any.whl", hash = "sha256:13cac98a0ef9f1c1cfb78185b11347d63e1539bd93e7c9e2d81bb4079084bd2d"},
+    {file = "brother_ql_web-0.4.0.tar.gz", hash = "sha256:697cd54c7c1a752398f321bdeaf6eaabe5e86663f8246d52ecd35a9d4e3e6242"},
 ]
 
 [package.dependencies]
@@ -151,7 +151,8 @@ jinja2 = "*"
 Pillow = ">=8"
 
 [package.extras]
-dev = ["black", "codespell", "flake8", "flake8-bugbear", "importlib-resources", "pep8-naming", "requests"]
+dev = ["black", "codespell", "flake8", "flake8-bugbear", "pep8-naming", "requests"]
+fontra = ["fontra (>=0.5.2)"]
 mypy = ["mypy", "types-Pillow", "types-requests"]
 
 [[package]]
@@ -1388,4 +1389,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0cafdcba9ef91dc786aaf812e1b1af0d1c0f90d365064566664aacdc3a7cfa80"
+content-hash = "cd90601303057b0f4b65c39e8482819cf53692a42eb408ffa35499d7fdfb103e"
