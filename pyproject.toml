@@ -24,7 +24,7 @@ segno = "^1.6.1"
 
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.4.2"
+black = "^25.0.0"
 
 [build-system]
 requires = ["poetry-core"]
