@@ -176,8 +176,13 @@ def index():
                 target=print_raffle,
                 args=(name_data, voucher_code, config, printer_config),
             ).start()
+            flash(
+                "Thanks for submitting. Collect your raffle ticket and put it in the box!",
+                "success",
+            )
+        else:
+            flash("Thanks for submitting", "success")
 
-        flash("Thanks for submitting", "success")
         return render_template("success.html")
     else:
         return render_template("form.html", form=form)
