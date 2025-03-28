@@ -10,6 +10,11 @@
     {{ bootstrap.load_css() }}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+        :root {
+            --background-image: url('{{ background_image }}');
+        }
+    </style>
 </head>
 
 <body class="bg-image">

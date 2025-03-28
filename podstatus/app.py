@@ -31,6 +31,11 @@ def create_app():
     app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "darkly"
     app.config["BOOTSTRAP_SERVE_LOCAL"] = True
 
+    # Add context processor for background image
+    @app.context_processor
+    def inject_background():
+        return {"background_image": config.BACKGROUND_IMAGE}
+
     # Load kubeconfig or use in-cluster configuration
     kubeconfig_path = config.KUBECONFIG
     try:

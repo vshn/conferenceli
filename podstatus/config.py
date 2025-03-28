@@ -18,6 +18,9 @@ class Config:
         self.BLINKSTICK_GROUP_LED = self.get_env_int_var("BLINKSTICK_GROUP_LED", 3)
         self.CHAOS_BASIC_AUTH_USERNAME = self.get_env_var("CHAOS_BASIC_AUTH_USERNAME")
         self.CHAOS_BASIC_AUTH_PASSWORD = self.get_env_var("CHAOS_BASIC_AUTH_PASSWORD")
+        self.BACKGROUND_IMAGE = self.get_env_var(
+            "BACKGROUND_IMAGE", "/static/images/background.png"
+        )
 
     def get_env_var(self, name, default=None):
         value = os.getenv(name, default)
