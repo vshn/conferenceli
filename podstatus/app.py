@@ -142,6 +142,11 @@ def create_app():
             try:
                 for event in w.stream(v1.list_node, timeout_seconds=0):
                     node = event["object"]
+
+                    # Skip nodes with SchedulingDisabled status
+                    if node.spec.unschedulable:
+                        continue
+
                     node_name = node.metadata.name
                     node_status = "Unknown"
 
