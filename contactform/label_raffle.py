@@ -51,6 +51,7 @@ def print_raffle(name_data, voucher_code, config, printer_config):
                 "--hide-scrollbars",
             ],
         )
+        hti.browser.use_new_headless = True # https://github.com/vgalin/html2image/issues/174#issuecomment-2625720244
         hti.screenshot(
             html_str=label_html,
             css_str=label_css,
