@@ -84,6 +84,7 @@ def print_voucher(
                 "--hide-scrollbars",
             ],
         )
+        hti.browser.use_new_headless = True # https://github.com/vgalin/html2image/issues/174#issuecomment-2625720244
         hti.load_file(config.APPUIO_LOGO_PATH)
         hti.load_file(qr_code_filename)
         hti.browser.print_command = True if config.LOG_LEVEL == "DEBUG" else False
