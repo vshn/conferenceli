@@ -1,5 +1,5 @@
 ### BUILDER
-FROM python:3.12-alpine as builder
+FROM python:3.13-alpine as builder
 
 RUN pip install poetry==1.8.3
 
@@ -16,7 +16,7 @@ RUN touch README.md
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root
 
 ### RUNTIME
-FROM python:3.12-alpine as runtime
+FROM python:3.13-alpine as runtime
 
 WORKDIR /app
 
