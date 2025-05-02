@@ -94,14 +94,14 @@ pywinusb = "*"
 
 [[package]]
 name = "bootstrap-flask"
-version = "2.4.2"
+version = "2.5.0"
 description = "Bootstrap 4 & 5 helper for your Flask projects."
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "bootstrap_flask-2.4.2-py3-none-any.whl", hash = "sha256:44b72e57e62a532b2578f6327fd584e75326b734e4141404b04003ab0b071f5c"},
-    {file = "bootstrap_flask-2.4.2.tar.gz", hash = "sha256:8dcd6d6ed5458cfb76da4d57d2277f447da08d7977d551c82f51919f62c9586c"},
+    {file = "bootstrap_flask-2.5.0-py3-none-any.whl", hash = "sha256:dd76203fe4d46062bf1e7fd2a25aaccdc54affde9acc282f6aa4da4f4bbf2a5a"},
+    {file = "bootstrap_flask-2.5.0.tar.gz", hash = "sha256:b6e5ea1ce40616fb289c9e85d4beedd43fea2048b4032f4abc83a582db494978"},
 ]
 
 [package.dependencies]
