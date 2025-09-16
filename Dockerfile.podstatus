@@ -28,8 +28,7 @@ RUN apk upgrade --no-cache --available \
     && apk add --no-cache \
     nginx \
     libusb \
-    libusb-dev \
-    eudev
+    py3-libusb1
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app/podstatus" \
