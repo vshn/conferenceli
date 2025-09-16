@@ -20,6 +20,7 @@ dependencies = [
     "gevent>=24.2.1,<25",
     "html2image>=2.0.4.3,<3",
     "segno>=1.6.1,<2",
+    "psutils>=3.3.14",
 ]
 
 [dependency-groups]

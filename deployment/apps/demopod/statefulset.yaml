@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: important-prod
+spec:
+  selector:
+    matchLabels:
+      app: important-prod
+  serviceName: important-prod
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        app: important-prod
+    spec:
+      terminationGracePeriodSeconds: 1
+      tolerations:
+        - key: "node.kubernetes.io/unreachable"
+          operator: "Exists"
+          effect: "NoExecute"
+          tolerationSeconds: 30
+        - key: "node.kubernetes.io/not-ready"
+          operator: "Exists"
+          effect: "NoExecute"
+          tolerationSeconds: 30
+      containers:
+        - name: echo
+          image: ghcr.io/vshn/conferenceli-demopod:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080

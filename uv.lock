@@ -215,6 +215,7 @@ dependencies = [
     { name = "gunicorn" },
     { name = "html2image" },
     { name = "kubernetes" },
+    { name = "psutils" },
     { name = "python-dotenv" },
     { name = "requests" },
     { name = "segno" },
@@ -238,6 +239,7 @@ requires-dist = [
     { name = "gunicorn", specifier = ">=23.0.0,<24" },
     { name = "html2image", specifier = ">=2.0.4.3,<3" },
     { name = "kubernetes", specifier = ">=31.0.0,<32" },
+    { name = "psutils", specifier = ">=3.3.14" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2" },
     { name = "requests", specifier = ">=2.32.2,<3" },
     { name = "segno", specifier = ">=1.6.1,<2" },
@@ -612,6 +614,28 @@ wheels = [
 ]
 
 [[package]]
+name = "psutils"
+version = "3.3.14"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "puremagic" },
+    { name = "pypdf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/45/ff/4af412351a21ee38835b7597555936c547830d9a8246a2b7d2aa41aabdd3/psutils-3.3.14.tar.gz", hash = "sha256:6212167dd8c09f59c9535d5e416c4f8c01431b7a5beab0ee68f4ec416ca3980c", size = 1252713, upload-time = "2025-09-08T19:18:44.524Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7f/e7/7f92746cd12bbb345b02b001279b64780073915423bd265f3b70f2e2d94a/psutils-3.3.14-py3-none-any.whl", hash = "sha256:e68ad84a149321c642e9f97087aee3dcba401fb7a3b2666eeb8002aacd6b9351", size = 55290, upload-time = "2025-09-08T19:18:41.338Z" },
+]
+
+[[package]]
+name = "puremagic"
+version = "1.30"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/7f/9998706bc516bdd664ccf929a1da6c6e5ee06e48f723ce45aae7cf3ff36e/puremagic-1.30.tar.gz", hash = "sha256:f9ff7ac157d54e9cf3bff1addfd97233548e75e685282d84ae11e7ffee1614c9", size = 314785, upload-time = "2025-07-04T18:48:36.061Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/ed/1e347d85d05b37a8b9a039ca832e5747e1e5248d0bd66042783ef48b4a37/puremagic-1.30-py3-none-any.whl", hash = "sha256:5eeeb2dd86f335b9cfe8e205346612197af3500c6872dffebf26929f56e9d3c1", size = 43304, upload-time = "2025-07-04T18:48:34.801Z" },
+]
+
+[[package]]
 name = "pyasn1"
 version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -639,6 +663,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1d/b2/31537cf4b1ca988837256c910a668b553fceb8f069bedc4b1c826024b52c/pycparser-2.22.tar.gz", hash = "sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6", size = 172736, upload-time = "2024-03-30T13:22:22.564Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/a3/a812df4e2dd5696d1f351d58b8fe16a405b234ad2886a0dab9183fb78109/pycparser-2.22-py3-none-any.whl", hash = "sha256:c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc", size = 117552, upload-time = "2024-03-30T13:22:20.476Z" },
+]
+
+[[package]]
+name = "pypdf"
+version = "6.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/20/ac/a300a03c3b34967c050677ccb16e7a4b65607ee5df9d51e8b6d713de4098/pypdf-6.0.0.tar.gz", hash = "sha256:282a99d2cc94a84a3a3159f0d9358c0af53f85b4d28d76ea38b96e9e5ac2a08d", size = 5033827, upload-time = "2025-08-11T14:22:02.352Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2c/83/2cacc506eb322bb31b747bc06ccb82cc9aa03e19ee9c1245e538e49d52be/pypdf-6.0.0-py3-none-any.whl", hash = "sha256:56ea60100ce9f11fc3eec4f359da15e9aec3821b036c1f06d2b660d35683abb8", size = 310465, upload-time = "2025-08-11T14:22:00.481Z" },
 ]
 
 [[package]]
