@@ -97,7 +97,7 @@ wheels = [
 
 [[package]]
 name = "brother-ql-web"
-version = "0.3.0"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bottle" },
@@ -105,9 +105,9 @@ dependencies = [
     { name = "jinja2" },
     { name = "pillow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b5/25/4b498661d4927d6b1eca68e518eecb6fbd5b6819cabb9226a1f9ba6405e9/brother_ql_web-0.3.0.tar.gz", hash = "sha256:bb10ead7c17debca8bc31e15a4635996130c423f60615d568ae63c3cfe964d01", size = 573601, upload-time = "2024-08-19T19:25:49.589Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/05/060b9d5df04c904d721357ce27059e244921da330dc58813af4a7864fcfc/brother_ql_web-0.5.0.tar.gz", hash = "sha256:3267da3e0460fa7d6f7c3ea7af39a47c44ba017465a9a2aa0ced1d9ddb87a8f3", size = 591385, upload-time = "2024-12-22T08:13:41.753Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/92/ef/0c9c23864a87ad7b6e91f3587967204dad9047c61c207eeffd959c2cd8bf/brother_ql_web-0.3.0-py3-none-any.whl", hash = "sha256:fb5fc25d7106b95b1da290eb90ea6eaff8094a452bee5f6d519831a56765b1bf", size = 547106, upload-time = "2024-08-19T19:25:47.908Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/58/ea259a3616ad34d22cd787eab9e93f804212c4a5f43b684c610739aa384e/brother_ql_web-0.5.0-py3-none-any.whl", hash = "sha256:86d8b377ba77db432b2ad42065fb211ad2ec5d6c0629d3fadaa14d19b32b2591", size = 547706, upload-time = "2024-12-22T08:13:38.949Z" },
 ]
 
 [[package]]
@@ -229,7 +229,7 @@ dev = [
 requires-dist = [
     { name = "blinkstick", specifier = ">=1.2.0,<2" },
     { name = "bootstrap-flask", specifier = ">=2.4.0,<3" },
-    { name = "brother-ql-web", specifier = ">=0.3.0,<0.4" },
+    { name = "brother-ql-web", specifier = ">=0.5,<0.6" },
     { name = "email-validator", specifier = ">=2.1.1,<3" },
     { name = "flask", specifier = ">=3.0.3,<4" },
     { name = "flask-sse", specifier = ">=1.0.0,<2" },
