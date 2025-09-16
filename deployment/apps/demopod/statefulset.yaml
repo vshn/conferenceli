@@ -1,19 +1,38 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: important-prod
+  name: critical-prod
 spec:
   selector:
     matchLabels:
-      app: important-prod
-  serviceName: important-prod
+      app: critical-prod
+  serviceName: critical-prod
   replicas: 5
   template:
     metadata:
       labels:
-        app: important-prod
+        app: critical-prod
     spec:
       terminationGracePeriodSeconds: 1
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - pc0
+                      - pc1
+                      - pc2
+            - weight: 1
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - conferenceli
       tolerations:
         - key: "node.kubernetes.io/unreachable"
           operator: "Exists"
@@ -25,7 +44,12 @@ spec:
           tolerationSeconds: 30
       containers:
         - name: echo
-          image: ghcr.io/vshn/conferenceli-demopod:latest
+          image: ghcr.io/vshn/conferenceli-demopod:main
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          env:
+            - name: CPU_PATTERN
+              value: random
+            - name: CPU_INTENSITY
+              value: "0.8"
