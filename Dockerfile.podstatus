@@ -27,7 +27,9 @@ WORKDIR /app
 RUN apk upgrade --no-cache --available \
     && apk add --no-cache \
     nginx \
-    libusb
+    libusb \
+    libusb-dev \
+    eudev
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app/podstatus" \
