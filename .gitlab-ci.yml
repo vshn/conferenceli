@@ -35,7 +35,7 @@ variables:
 # Trigger builds when something changes in these files or folders
 .build-changes: &build-changes
   - Dockerfile
-  - poetry.lock
+  - uv.lock
   - pyproject.toml
   - contactform/**/*
   - .gitlab-ci.yml

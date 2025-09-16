@@ -1,33 +1,39 @@
 ### BUILDER
-FROM python:3.12-bookworm as builder
+FROM python:3.12-alpine as builder
 
-RUN pip install poetry==1.8.3
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-ENV POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_IN_PROJECT=1 \
-    POETRY_VIRTUALENVS_CREATE=1 \
-    POETRY_CACHE_DIR=/tmp/poetry_cache
+# Change the working directory to `/app`
+WORKDIR /app
+
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
+
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
+
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
+
+### RUNTIME
+FROM python:3.12-alpine as runtime
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock ./
-RUN touch README.md
+RUN apk upgrade --no-cache --available \
+    && apk add --no-cache \
+    nginx \
+    libusb
 
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root
-
-### RUNTIME
-FROM python:3.12-slim-bookworm as runtime
-
-RUN apt-get update && \
-    apt-get install -y nginx python3-libusb1 && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV VIRTUAL_ENV=/app/.venv \
-    PATH="/app/.venv/bin:$PATH" \
-    PYTHONPATH="/podstatus" \
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app/podstatus" \
     GUNICORN_CMD_ARGS="--workers=1 --bind=unix:/app/gunicorn.sock --access-logfile=-"
 
-COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=builder /app/.venv /app/.venv
 
 COPY podstatus ./podstatus
 COPY nginx.conf /etc/nginx/nginx.conf

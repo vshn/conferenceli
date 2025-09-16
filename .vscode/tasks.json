@@ -4,7 +4,7 @@
         {
             "label": "Run Flask",
             "type": "shell",
-            "command": "poetry run flask run --reload",
+            "command": "uv run flask run --reload",
             "group": {
                 "kind": "build",
                 "isDefault": true

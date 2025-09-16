@@ -4,7 +4,9 @@ When attending conferences or Meetups, we bring some fancy hardware to attract p
 
 * Big red chaos-button which randomly deletes Pods on a Kubernetes instance
 * 3D printed shipping containers with LEDs which represent the state of the running Pods
+* A fog machine to simulate Pods going up in smoke
 * A Raspberry Pi which runs everything locally with [K3s](https://k3s.io/)
+* A cluster-in-a-box
 * A label printer which prints a booth raffle ticket
 
 ![Booth Setup](docs/booth1.jpg)
@@ -14,26 +16,26 @@ https://github.com/user-attachments/assets/253b828e-1091-4862-82ff-4eefc8c6a36d
 ## Hardware Setup
 
 ```
-                                      Shipping Containers                      
-                                                                               
-                 USB  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐    
-               ┌──────┤       ├──┤       ├──┤       ├──┤       ├──┤       │    
-               │      └───────┘  └───────┘  └───────┘  └───────┘  └───────┘    
-               │                                                                                                                         
+                                      Shipping Containers
+
+                 USB  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐
+               ┌──────┤       ├──┤       ├──┤       ├──┤       ├──┤       │
+               │      └───────┘  └───────┘  └───────┘  └───────┘  └───────┘
+               │
                │   ┌──────────────────┐                 ┌─────────────────────┐
                │   │                  ├ ─ ─ ─ ─ ─ ─ ─ ─ ┤                     │
                └───┤ Raspberry Pi 5   │                 │ Brother QL-820NWBc  │
                    │                  ├──────────────┐  │                     │
                **  └────────┬─────────┘    Network   │  └─────────────┬───────┘
-           *****            │                        │                │        
-Bluetooth  *                │ HDMI                   │                │        
-           *                │                     ┌──┴────────────────┴─────┐  
+           *****            │                        │                │
+Bluetooth  *                │ HDMI                   │                │
+           *                │                     ┌──┴────────────────┴─────┐
   ┌─────────┐         ┌─────┴──────┐            ┌─│ Integrated Switch       │─┐
   │         │         │            │            │ └─────────────────────────┘ │
   │ Red     │         │  HDMI      │            │                             │
   │ Button  │         │  Display   │            │    PicoCluster 3T           │
   │         │         │            │            │                             │
-  └─────────┘         └────────────┘            └─────────────────────────────┘                             
+  └─────────┘         └────────────┘            └─────────────────────────────┘
 ```
 
 **Hardware list**:
@@ -53,6 +55,7 @@ Bluetooth  *                │ HDMI                   │                │
 * [Pico 3T Raspberry PI5 Cluster 8GB (Advanced Kit (has boards) / 192GB (64GB microSD))](https://www.picocluster.com/products/pico-3t-raspberry-pi5-cluster-8gb)
 * [Pimoroni Blinkt!](https://www.pi-shop.ch/blinkt)
 * [0.1" 2x20-pin Strip Right Angle Female Header](https://www.pi-shop.ch/0-1-2x20-pin-strip-right-angle-female-header)
+* [Costronica fog machine](https://costronica.com)
 
 ## Raspberry Pi setup
 
@@ -206,10 +209,10 @@ By issuing an authenticated `GET` request to the `/chaos` endpoint, a random Pod
 On startup, an autostart command in the Wayfire configuration tries to connect to the Podstatus web application.
 Once this is successful, a full-screen Chromium kiosk session is started, displaying the Podstatus web application.
 
-During development, the app can be started with (make sure to install dependencies with Poetry first):
+During development, the app can be started with (make sure to install dependencies with [uv](https://docs.astral.sh/uv/) first):
 
 ```
-FLASK_APP="podstatus/app.py" PYTHONPATH="podstatus" flask run --reload
+FLASK_APP="podstatus/app.py" PYTHONPATH="podstatus" uv run flask run --reload
 ```
 
 And in production, the idea is that it runs with gunicorn:
