@@ -1,5 +1,5 @@
 ### BUILDER
-FROM python:3.12-alpine as builder
+FROM python:3.12-bookworm as builder
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -20,17 +20,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 ### RUNTIME
-FROM python:3.12-alpine as runtime
+FROM python:3.12-slim-bookworm as runtime
 
 WORKDIR /app
 
-RUN apk upgrade --no-cache --available \
-    && apk add --no-cache \
-    nginx \
-    libusb \
-    libusb-dev \
-    eudev \
-    py3-libusb1
+RUN apt-get update && \
+    apt-get install -y nginx python3-libusb1 && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app/podstatus" \
