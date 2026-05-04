@@ -42,6 +42,9 @@ venv.bak/
 # IDE
 .idea/
 
+# Worktrees
+.worktrees/
+
 # Others - Project Specific
 sample-out.png
 leads.csv
