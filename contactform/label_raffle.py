@@ -42,6 +42,7 @@ def print_raffle(name_data, voucher_code, config, printer_config):
     </div>
     """
 
+    preview_filename = None
     try:
         # Generate image from HTML and CSS
         hti = Html2Image(

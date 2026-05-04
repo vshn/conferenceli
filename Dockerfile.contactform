@@ -26,6 +26,7 @@ WORKDIR /app
 
 RUN apk upgrade --no-cache --available \
     && apk add --no-cache \
+    chromium \
     chromium-swiftshader \
     nginx
 
