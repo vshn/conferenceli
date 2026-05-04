@@ -11,7 +11,7 @@ from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_bootstrap import Bootstrap5
-from label_voucher import print_voucher
+from label_voucher import print_appuio_voucher, print_servala_voucher
 from label_raffle import print_raffle
 
 
@@ -75,7 +75,11 @@ class LeadForm(FlaskForm):
 class ConfigForm(FlaskForm):
     campaign_name = StringField("Campaign Name *", validators=[DataRequired()])
     label_header = StringField("Label Header *", validators=[DataRequired()])
-    print_appuio_voucher = BooleanField("Print APPUiO Voucher")
+    voucher_type = SelectField(
+        "Voucher Type",
+        choices=[("none", "None"), ("appuio", "APPUiO"), ("servala", "Servala")],
+    )
+    servala_voucher_code = StringField("Servala Voucher Code")
     print_raffle_ticket = BooleanField("Print Raffle Ticket")
     odoo_leadcreation_enabled = BooleanField("Odoo Lead Creation Enabled")
     submit = SubmitField("Save Changes")
@@ -129,6 +133,11 @@ def index():
         append_to_csv(csv_data, config.CSV_FILE_PATH)
 
         if config.ODOO_CREATELEAD_ENABLED:
+            voucher_label = (
+                "APPUiO Voucher Code"
+                if config.VOUCHER_TYPE == "appuio"
+                else "Raffle Code"
+            )
             # Create lead in Odoo
             try:
                 lead_id = odoo_client.create(
@@ -141,7 +150,7 @@ def index():
                         "partner_name": form.company.data,
                         "country_id": form.country.data,
                         "phone": form.phone.data,
-                        "description": f"{form.notes.data}<br><br>APPUiO Voucher Code: {voucher_code}",
+                        "description": f"{form.notes.data}<br><br>{voucher_label}: {voucher_code}",
                         "campaign_id": config.CAMPAIGN_ID,
                         "source_id": config.SOURCE_ID,
                         "tag_ids": [(4, config.TAG_ID)],
@@ -157,9 +166,9 @@ def index():
         email_data = form.email.data
         phone_data = form.phone.data
 
-        if config.PRINT_APPUIO_VOUCHER:
+        if config.VOUCHER_TYPE == "appuio":
             threading.Thread(
-                target=print_voucher,
+                target=print_appuio_voucher,
                 args=(
                     name_data,
                     company_data,
@@ -170,6 +179,16 @@ def index():
                     printer_config,
                 ),
             ).start()
+        elif config.VOUCHER_TYPE == "servala":
+            if not config.SERVALA_VOUCHER_CODE:
+                logging.error(
+                    "VOUCHER_TYPE=servala but SERVALA_VOUCHER_CODE is empty; skipping voucher print"
+                )
+            else:
+                threading.Thread(
+                    target=print_servala_voucher,
+                    args=(name_data, voucher_code, config, printer_config),
+                ).start()
 
         if config.PRINT_RAFFLE_TICKET:
             threading.Thread(
@@ -193,7 +212,8 @@ def index():
 def config_endpoint():
     form = ConfigForm(
         campaign_name=config.CAMPAIGN_NAME,
-        print_appuio_voucher=config.PRINT_APPUIO_VOUCHER,
+        voucher_type=config.VOUCHER_TYPE,
+        servala_voucher_code=config.SERVALA_VOUCHER_CODE,
         print_raffle_ticket=config.PRINT_RAFFLE_TICKET,
         label_header=config.LABEL_HEADER,
         odoo_leadcreation_enabled=config.ODOO_CREATELEAD_ENABLED,
@@ -205,7 +225,8 @@ def config_endpoint():
                 "utm.campaign", form.campaign_name.data
             )
             config.CAMPAIGN_NAME = form.campaign_name.data
-            config.PRINT_APPUIO_VOUCHER = form.print_appuio_voucher.data
+            config.VOUCHER_TYPE = form.voucher_type.data
+            config.SERVALA_VOUCHER_CODE = form.servala_voucher_code.data
             config.PRINT_RAFFLE_TICKET = form.print_raffle_ticket.data
             config.ODOO_CREATELEAD_ENABLED = form.odoo_leadcreation_enabled.data
             config.LABEL_HEADER = form.label_header.data
