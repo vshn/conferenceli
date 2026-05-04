@@ -24,9 +24,8 @@ class Config:
         self.SOURCE_NAME = self.get_env_var("SOURCE_NAME")
         self.CSV_FILE_PATH = self.get_env_var("CSV_FILE_PATH")
         self.LABEL_HEADER = self.get_env_var("LABEL_HEADER", "Welcome")
-        self.PRINT_APPUIO_VOUCHER = (
-            self.get_env_var("PRINT_APPUIO_VOUCHER", "true").lower() == "true"
-        )
+        self.VOUCHER_TYPE = self.get_env_var("VOUCHER_TYPE", "appuio").lower()
+        self.SERVALA_VOUCHER_CODE = self.get_env_var("SERVALA_VOUCHER_CODE", "")
         self.PRINT_RAFFLE_TICKET = (
             self.get_env_var("PRINT_RAFFLE_TICKET", "true").lower() == "true"
         )
@@ -43,6 +42,12 @@ class Config:
         )
         self.APPUIO_LOGO_PATH = self.get_env_var(
             "APPUIO_LOGO_PATH", "contactform/static/images/appuio-bw.png"
+        )
+        self.SERVALA_SIGNUP_URL = self.get_env_var(
+            "SERVALA_SIGNUP_URL", "https://portal.servala.com"
+        )
+        self.SERVALA_LOGO_PATH = self.get_env_var(
+            "SERVALA_LOGO_PATH", "contactform/static/images/servala-bw.png"
         )
         self.TAG_ID = None
         self.CAMPAIGN_ID = None
@@ -77,8 +82,15 @@ class Config:
                     "CAMPAIGN_NAME", self.CAMPAIGN_NAME
                 )
                 self.LABEL_HEADER = config_data.get("LABEL_HEADER", self.LABEL_HEADER)
-                self.PRINT_APPUIO_VOUCHER = config_data.get(
-                    "PRINT_APPUIO_VOUCHER", self.PRINT_APPUIO_VOUCHER
+                if "VOUCHER_TYPE" in config_data:
+                    self.VOUCHER_TYPE = config_data["VOUCHER_TYPE"]
+                elif "PRINT_APPUIO_VOUCHER" in config_data:
+                    # Legacy migration: pre-Servala config files only had a boolean.
+                    self.VOUCHER_TYPE = (
+                        "appuio" if config_data["PRINT_APPUIO_VOUCHER"] else "none"
+                    )
+                self.SERVALA_VOUCHER_CODE = config_data.get(
+                    "SERVALA_VOUCHER_CODE", self.SERVALA_VOUCHER_CODE
                 )
                 self.PRINT_RAFFLE_TICKET = config_data.get(
                     "PRINT_RAFFLE_TICKET", self.PRINT_RAFFLE_TICKET
@@ -91,7 +103,8 @@ class Config:
 def save_config(config):
     config_data = {
         "CAMPAIGN_NAME": config.CAMPAIGN_NAME,
-        "PRINT_APPUIO_VOUCHER": config.PRINT_APPUIO_VOUCHER,
+        "VOUCHER_TYPE": config.VOUCHER_TYPE,
+        "SERVALA_VOUCHER_CODE": config.SERVALA_VOUCHER_CODE,
         "PRINT_RAFFLE_TICKET": config.PRINT_RAFFLE_TICKET,
         "ODOO_CREATELEAD_ENABLED": config.ODOO_CREATELEAD_ENABLED,
         "LABEL_HEADER": config.LABEL_HEADER,
