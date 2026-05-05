@@ -52,7 +52,7 @@ def print_raffle(name_data, voucher_code, config, printer_config):
                 "--hide-scrollbars",
             ],
         )
-        hti.browser.use_new_headless = True # https://github.com/vgalin/html2image/issues/174#issuecomment-2625720244
+        hti.browser.use_new_headless = True  # https://github.com/vgalin/html2image/issues/174#issuecomment-2625720244
         hti.screenshot(
             html_str=label_html,
             css_str=label_css,
@@ -87,12 +87,10 @@ def print_raffle(name_data, voucher_code, config, printer_config):
     except Exception as e:
         logging.error(f"Printing of raffle ticket failed for {name_data}: {e}")
     finally:
-        # Clean up temporary files
-        if os.path.exists(label_filename):
-            os.remove(label_filename)
-        if (
-            config.LOG_LEVEL == "DEBUG"
-            and preview_filename
-            and os.path.exists(preview_filename)
-        ):
-            os.remove(preview_filename)
+        # In DEBUG mode, keep the rendered label image and the brother_ql
+        # preview so they can be inspected without a printer.
+        if config.LOG_LEVEL != "DEBUG":
+            if os.path.exists(label_filename):
+                os.remove(label_filename)
+            if preview_filename and os.path.exists(preview_filename):
+                os.remove(preview_filename)

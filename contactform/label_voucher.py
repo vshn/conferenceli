@@ -41,11 +41,10 @@ body, html {
     letter-spacing: 4px;
 }
 .identifier {
-    margin-top: 30px;
-    font-size: 22px;
+    font-size: 24px;
+    font-weight: bold;
     color: #000;
-    text-align: right;
-    padding-right: 25px;
+    margin: 10px 0 0 0;
 }
 """
 
@@ -112,17 +111,16 @@ def _render_and_print(
     except Exception as e:
         logging.error(f"Printing of {label_kind} voucher failed for {name_data}: {e}")
     finally:
-        if os.path.exists(label_filename):
-            os.remove(label_filename)
+        # In DEBUG mode, keep the rendered label image and the brother_ql
+        # preview so they can be inspected without a printer.
+        if config.LOG_LEVEL != "DEBUG":
+            if os.path.exists(label_filename):
+                os.remove(label_filename)
+            if preview_filename and os.path.exists(preview_filename):
+                os.remove(preview_filename)
         for f in transient_files:
             if os.path.exists(f):
                 os.remove(f)
-        if (
-            config.LOG_LEVEL == "DEBUG"
-            and preview_filename
-            and os.path.exists(preview_filename)
-        ):
-            os.remove(preview_filename)
 
 
 def print_appuio_voucher(
