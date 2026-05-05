@@ -1,3 +1,4 @@
+import json
 import signal
 import sys
 import logging
@@ -10,6 +11,8 @@ from functools import wraps
 from gevent import monkey
 
 monkey.patch_all()
+
+import gevent.queue
 
 from flask import (
     Flask,
@@ -33,6 +36,19 @@ stop_event = threading.Event()
 
 # In-memory display mode (no persistence; resets to 'day' on app restart)
 display_mode = {"value": "day"}
+
+# Subscribers for the manual theatre-event SSE channel. Each open client gets
+# its own gevent.queue.Queue; broadcast_event fans out to all of them.
+event_subscribers = []
+
+
+def broadcast_event(name):
+    payload = {"event": name}
+    for q in list(event_subscribers):
+        try:
+            q.put_nowait(payload)
+        except Exception:
+            pass
 
 
 def create_app():
@@ -116,6 +132,38 @@ def create_app():
         except Exception as e:
             logging.error(f"Failed to list pods in namespace {namespace} because {e}")
             return jsonify({"message": "Failed to list pods"}), 500
+
+    def do_chaos_index(pod_index):
+        try:
+            label_selector = (
+                f"statefulset.kubernetes.io/pod-name={pod_index}"
+            )
+            pods = v1.list_namespaced_pod(
+                namespace, label_selector=label_selector
+            ).items
+            running = [
+                p
+                for p in pods
+                if p.status.phase == "Running"
+                and p.metadata.deletion_timestamp is None
+            ]
+            if not running:
+                logging.info(f"No running pod for index {pod_index}")
+                return (
+                    jsonify({"message": f"No running pod for index {pod_index}"}),
+                    404,
+                )
+            pod = running[0]
+            pod_name = pod.metadata.name
+            v1.delete_namespaced_pod(pod_name, namespace)
+            logging.info(f"Chaos monkey deleted pod {pod_name} (targeted)")
+            return jsonify({"message": f"Pod {pod_name} deleted"}), 200
+        except client.ApiException as e:
+            logging.error(f"Targeted chaos failed for index {pod_index}: {e}")
+            return jsonify({"message": "Failed to delete pod"}), 500
+        except Exception as e:
+            logging.error(f"Targeted chaos error for index {pod_index}: {e}")
+            return jsonify({"message": "Failed"}), 500
 
     def do_toggle_night_mode():
         display_mode["value"] = "day" if display_mode["value"] == "night" else "night"
@@ -230,6 +278,37 @@ def create_app():
     @requires_control_session
     def control_nightmode():
         return do_toggle_night_mode()
+
+    @app.route("/control/chaos/<pod_index>", methods=["POST"])
+    @requires_control_session
+    def control_chaos_index(pod_index):
+        return do_chaos_index(pod_index)
+
+    @app.route("/control/event/<event_name>", methods=["POST"])
+    @requires_control_session
+    def control_event(event_name):
+        broadcast_event(event_name)
+        logging.info(f"Theatre event triggered: {event_name}")
+        return jsonify({"message": f"Event {event_name} fired"}), 200
+
+    @app.route("/stream_events")
+    def stream_events():
+        # Each subscriber gets its own queue; broadcast_event fans out to all.
+        # gevent.queue.Queue.get() yields cooperatively.
+        def watch_events():
+            q = gevent.queue.Queue()
+            event_subscribers.append(q)
+            try:
+                while True:
+                    payload = q.get()
+                    yield f"data: {json.dumps(payload)}\n\n"
+            finally:
+                try:
+                    event_subscribers.remove(q)
+                except ValueError:
+                    pass
+
+        return Response(watch_events(), content_type="text/event-stream")
 
     @app.route("/stream_mode")
     def stream_mode():
