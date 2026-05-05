@@ -42,8 +42,8 @@ body, html {
 }
 .identifier {
     margin-top: 30px;
-    font-size: 20px;
-    color: #888;
+    font-size: 22px;
+    color: #000;
     text-align: right;
     padding-right: 25px;
 }
