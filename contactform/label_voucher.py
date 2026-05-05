@@ -26,6 +26,9 @@ body, html {
 .logo {
     width: 70%;
 }
+.logo_servala {
+    width: 55%;
+}
 .text {
     font-size: 45px;
 }
@@ -38,11 +41,11 @@ body, html {
     letter-spacing: 4px;
 }
 .identifier {
-    position: fixed;
-    bottom: 10px;
-    right: 15px;
-    font-size: 18px;
+    margin-top: 30px;
+    font-size: 20px;
     color: #888;
+    text-align: right;
+    padding-right: 25px;
 }
 """
 
@@ -177,20 +180,20 @@ def print_servala_voucher(name_data, voucher_code, config, printer_config):
 
     label_html = f"""\
     <div>
-        <p><img src="servala-bw.png" class="logo"></p>
+        <p><img src="servala-bw.png" class="logo_servala"></p>
         <p class="text">Hi {name_data}.</p>
         <p class="text">Your personal voucher code to try Servala, the Sovereign App Store:</p>
         <p class="code">{config.SERVALA_VOUCHER_CODE}</p>
         <p class="text_small">Start here: {config.SERVALA_SIGNUP_URL}</p>
         <p><img src="{qr_code_filename}"></p>
-        <span class="identifier">#{voucher_code}</span>
+        <p class="identifier">#{voucher_code}</p>
     </div>
     """
 
     logging.debug(f"Servala QR URL: {config.SERVALA_SIGNUP_URL}")
 
     qrcode = segno.make_qr(config.SERVALA_SIGNUP_URL)
-    qrcode.save(qr_code_filename, scale=5)
+    qrcode.save(qr_code_filename, scale=8)
 
     _render_and_print(
         label_html=label_html,
