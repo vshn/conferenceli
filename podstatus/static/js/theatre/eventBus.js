@@ -108,17 +108,26 @@ export async function fire(name) {
   await runEvent(def);
 }
 
-// Animation helper: kill a specific pod by index. Records the kill so the
-// resulting Terminating SSE event isn't mistaken for external chaos.
+// Animation helper: kill a specific pod by visual index. Translates the index
+// to the full pod name (the value of the statefulset.kubernetes.io/pod-name
+// label, e.g. "http-echo-4") which is what the backend label selector matches
+// — passing just "4" returns an empty pod list and 404s.
+//
+// Records the kill so the resulting Terminating SSE event isn't mistaken for
+// external chaos by the suppression rule.
 export async function killPod(index) {
+  const pod = state.pods.get(index);
+  if (!pod) {
+    console.warn('[theatre] killPod: no pod at index', index);
+    return;
+  }
   ourKillTimestamps.push(performance.now());
-  // Keep only recent ones to bound memory.
   while (ourKillTimestamps.length > 8) ourKillTimestamps.shift();
   try {
-    const r = await fetch(`/theatre/chaos/${encodeURIComponent(index)}`, {
+    const r = await fetch(`/theatre/chaos/${encodeURIComponent(pod.name)}`, {
       method: 'POST',
     });
-    if (!r.ok) console.warn('[theatre] kill returned', r.status);
+    if (!r.ok) console.warn('[theatre] kill returned', r.status, 'for', pod.name);
   } catch (err) {
     console.warn('[theatre] kill request failed', err);
   }
