@@ -1,34 +1,345 @@
 :root {
-    --background-image: url('/static/images/background.png');
+  --stage-w: 1280px;
+  --stage-h: 800px;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  background: #000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+#stage {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#scene {
+  position: relative;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  background: linear-gradient(to bottom, #87ceeb 0%, #cfe9f5 60%, #b8d8e8 100%);
+  overflow: hidden;
+}
+#scene .layer,
+#scene #layer-fx,
+#scene #layer-chrome {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+#layer-fx { z-index: 50; }
+#layer-night-additive { z-index: 57; }
+#layer-chrome { z-index: 60; }
+
+#vshn-logo {
+  position: absolute;
+  top: 22px; left: 24px;
+  width: 260px; height: 90px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  background-image: url('/static/images/vshn-logo.svg');
+  background-size: 70% auto;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
-.bg-image {
-    background-image: var(--background-image);
-    background-size: 100% 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-    height: 100vh;
+#qr-card {
+  position: absolute;
+  top: 22px; right: 24px;
+  width: 160px;
+  background: rgba(255,255,255,0.92);
+  border-radius: 8px;
+  padding: 10px 10px 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  text-align: center;
+}
+#qr-card .qr-image {
+  width: 130px; height: 130px;
+  background-image: url('/static/images/qr-boothraffle.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin: 0 auto;
+}
+#qr-card .qr-caption {
+  margin-top: 6px;
+  font-size: 11px; font-weight: 600;
+  color: #222;
 }
 
-@media (max-width: 767px) {
-    .bg-image {
-        background-image: none;
-    }
+/* Kill counter — easter egg, session-only */
+#kill-counter {
+  position: absolute;
+  top: 36px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.85);
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-family: -apple-system, "Segoe UI", monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  will-change: transform, background;
+}
+#kill-counter .kc-value {
+  color: #c83020;
+  font-variant-numeric: tabular-nums;
+  min-width: 1.4em;
+  text-align: center;
+}
+#kill-counter.bumped {
+  animation: counterBump 0.6s ease-out;
+}
+@keyframes counterBump {
+  0%   { transform: translateX(-50%) scale(1);    background: rgba(255,255,255,0.85); }
+  25%  { transform: translateX(-50%) scale(1.18); background: rgba(255,210,160,0.95); }
+  100% { transform: translateX(-50%) scale(1);    background: rgba(255,255,255,0.85); }
 }
 
-main h1 {
-    text-align: center;
-    color: rgb(0, 13, 26);
+/* === Idle ambiance: clouds === */
+.cloud { will-change: transform; }
+#cloud-0 { animation: drift0 80s linear infinite; }
+#cloud-1 { animation: drift1 110s linear infinite; }
+#cloud-2 { animation: drift2 95s linear infinite; }
+#cloud-3 { animation: drift3 130s linear infinite; }
+@keyframes drift0 { from { transform: translate(180px, 110px) scale(1.0); } to { transform: translate(1380px, 110px) scale(1.0); } }
+@keyframes drift1 { from { transform: translate(520px,  80px) scale(0.7); } to { transform: translate(1380px,  80px) scale(0.7); } }
+@keyframes drift2 { from { transform: translate(880px, 160px) scale(1.2); } to { transform: translate(1380px, 160px) scale(1.2); } }
+@keyframes drift3 { from { transform: translate(1180px, 60px) scale(0.6); } to { transform: translate(-200px,  60px) scale(0.6); } }
+
+/* === Idle ambiance: water waves === */
+.wave { will-change: transform; }
+.wave-0 { animation: waveDrift0 8s linear infinite; }
+.wave-1 { animation: waveDrift1 14s linear infinite; }
+.wave-2 { animation: waveDrift2 22s linear infinite; }
+@keyframes waveDrift0 { from { transform: translateX(0);    } to { transform: translateX(-200px); } }
+@keyframes waveDrift1 { from { transform: translateX(-50px);} to { transform: translateX(150px);  } }
+@keyframes waveDrift2 { from { transform: translateX(0);    } to { transform: translateX(-100px); } }
+
+/* Water glints — sun reflecting off ripples */
+.water-glint { will-change: opacity; }
+@keyframes glintFade {
+  0%, 35%, 100% { opacity: 0; }
+  50%           { opacity: 0.85; }
+}
+.glint-0 { animation: glintFade 5s   ease-in-out infinite  0s;    }
+.glint-1 { animation: glintFade 5.5s ease-in-out infinite -1.2s;  }
+.glint-2 { animation: glintFade 6s   ease-in-out infinite -2.5s;  }
+.glint-3 { animation: glintFade 4.5s ease-in-out infinite -3s;    }
+.glint-4 { animation: glintFade 5.2s ease-in-out infinite -4s;    }
+.glint-5 { animation: glintFade 5.8s ease-in-out infinite -1.7s;  }
+
+/* === Idle ambiance: ship bob === */
+.ship { will-change: transform; }
+.ship-bob {
+  transform-origin: center bottom; will-change: transform;
+  /* Default for any ship beyond the 4 nth-child overrides below. */
+  animation: shipBob 3.2s ease-in-out infinite;
+}
+@keyframes shipBob {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-3px); }
+}
+.ship:nth-child(1) .ship-bob { animation: shipBob 3s ease-in-out infinite 0s; }
+.ship:nth-child(2) .ship-bob { animation: shipBob 3.4s ease-in-out infinite -0.7s; }
+.ship:nth-child(3) .ship-bob { animation: shipBob 3.1s ease-in-out infinite -1.3s; }
+.ship:nth-child(4) .ship-bob { animation: shipBob 3.6s ease-in-out infinite -2.1s; }
+
+/* === Idle ambiance: lighthouse === */
+#lighthouse-beam {
+  transform-origin: 0 25px;
+  animation: beamSpin 8s linear infinite;
+  opacity: 0.18 !important;
+}
+@keyframes beamSpin {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+#lighthouse-blink {
+  animation: blink 1s ease-in-out infinite;
+}
+@keyframes blink {
+  0%,40%,100% { opacity: 1; }
+  50%,90%     { opacity: 0.2; }
 }
 
-.container {
-    max-width: 642px;
+/* === Idle ambiance: bow lantern pulse === */
+.ship-lantern {
+  filter: drop-shadow(0 0 4px #ffd966);
+  animation: lanternPulse 4s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+@keyframes lanternPulse {
+  0%,100% { filter: drop-shadow(0 0 4px #ffd966); }
+  50%     { filter: drop-shadow(0 0 10px #ffe89a); }
+}
+.ship.node-stricken .ship-lantern { animation: none; opacity: 0.3; filter: none; }
+.ship-lantern.relight {
+  animation: lanternRelight 1.5s ease-out !important;
+}
+@keyframes lanternRelight {
+  0%   { fill: #fffacd; filter: drop-shadow(0 0 18px #fff8c0); transform: scale(1.4); }
+  30%  { fill: #fff2a0; filter: drop-shadow(0 0 22px #fffacd); transform: scale(1.25); }
+  100% { fill: #ffe07a; filter: drop-shadow(0 0 4px #ffd966);  transform: scale(1); }
+}
+.ship.node-stricken .ship-hull { fill: #2a3540; }
+.ship.node-stricken .ship-bob {
+  animation: shipList 4s ease-in-out forwards;
+}
+@keyframes shipList {
+  from { transform: translate(0, 0) rotate(0); }
+  to   { transform: translate(0, 30px) rotate(10deg); }
 }
 
-footer {
-    color: white;
+/* === Seagulls === */
+.seagull { will-change: transform; }
+.seagull-wing { stroke: #222; stroke-width: 2; fill: none; stroke-linecap: round; }
+@keyframes wingFlap {
+  0%,100% { transform: scaleY(1); }
+  50%     { transform: scaleY(0.55); }
+}
+.seagull.flapping .seagull-wing {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: wingFlap 0.25s ease-in-out infinite;
 }
 
-footer a {
-    color: white;
+/* === Death scorch flame === */
+.flame { transform-origin: center bottom; transform-box: fill-box; }
+.flame-outer, .flame-inner {
+  transform-origin: center bottom; transform-box: fill-box;
+  animation: flameFlicker 0.18s ease-in-out infinite;
+}
+.flame-inner { animation-delay: -0.06s; animation-duration: 0.13s; }
+@keyframes flameFlicker {
+  0%,100% { transform: scaleY(1)    scaleX(1);    }
+  33%     { transform: scaleY(1.18) scaleX(0.88); }
+  66%     { transform: scaleY(0.92) scaleX(1.10); }
+}
+
+/* === Delivery drone === */
+.drone-rotor {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: rotorSpin 80ms linear infinite;
+}
+@keyframes rotorSpin {
+  from { transform: scaleX(1);   }
+  50%  { transform: scaleX(0.2); }
+  to   { transform: scaleX(1);   }
+}
+
+/* === Pod container states === */
+.pod-container { transition: opacity 0.4s; }
+.pod-container[data-state="Pending"]   { opacity: 0.6; }
+.pod-container[data-state="Pending"]   .container-body {
+  stroke: #f4c430; stroke-width: 2; stroke-dasharray: 4 3;
+  animation: pendingPulse 1s ease-in-out infinite;
+}
+.pod-container[data-state="Terminating"] .container-body {
+  stroke: #ff3030; stroke-width: 2;
+  animation: terminatingFlash 0.25s linear infinite;
+}
+.pod-container[data-state="Terminating"] .container-inner {
+  animation: deathWarning 0.3s ease-in-out 1;
+  transform-origin: center bottom;
+  transform-box: fill-box;
+}
+@keyframes deathWarning {
+  0%   { transform: translate(0, 0)    scale(1);    }
+  20%  { transform: translate(-2px, 0) scale(1.04); }
+  40%  { transform: translate( 2px, 0) scale(1.06); }
+  60%  { transform: translate(-1px, 0) scale(1.08); }
+  80%  { transform: translate( 1px, 0) scale(1.10); }
+  100% { transform: translate(0, 0)    scale(1.10); }
+}
+.pod-container[data-state="Failed"] .container-body {
+  filter: grayscale(0.85) brightness(0.45);
+}
+@keyframes pendingPulse {
+  0%,100% { stroke-opacity: 1; }
+  50%     { stroke-opacity: 0.3; }
+}
+@keyframes terminatingFlash {
+  0%,100% { stroke: #ff3030; }
+  50%     { stroke: #ffaa00; }
+}
+
+/* === Accessibility: reduced motion === */
+@media (prefers-reduced-motion: reduce) {
+  .cloud, .wave, .water-glint, .ship-bob, #lighthouse-beam,
+  .ship-lantern, .ship-lantern.relight, #lighthouse-blink,
+  .drone-rotor,
+  .flame-outer, .flame-inner,
+  .star,
+  .pod-container[data-state="Pending"] .container-body,
+  .pod-container[data-state="Terminating"] .container-body,
+  .pod-container[data-state="Terminating"] .container-inner {
+    animation: none !important;
+  }
+}
+
+/* === Night mode ===
+ * Toggled by the .night-mode class on #scene (driven by /stream_mode SSE).
+ * Triggered server-side via authenticated GET /nightmode (toggle).
+ *
+ * Approach: a single dark-blue overlay covers the whole scene with a unified
+ * opacity transition (the "dusk fade"). Moon, stars, and lampposts are
+ * additive elements that fade in on top — but they all share one transition
+ * duration so the change reads as one coherent sunset, not separate pops.
+ */
+#night-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    rgba(8, 14, 38, 0.78) 0%,
+    rgba(14, 26, 56, 0.72) 50%,
+    rgba(20, 36, 70, 0.65) 100%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 55;  /* above scene + fx, below chrome */
+  transition: opacity 3.5s ease-in-out;
+}
+#scene.night-mode #night-overlay { opacity: 1; }
+
+/* Celestial bodies + dock lights: same 3.5s envelope as the overlay */
+.sun  { transition: opacity 3.5s ease-in-out; opacity: 1; }
+.moon { transition: opacity 3.5s ease-in-out; opacity: 0; }
+.star { transition: opacity 3.5s ease-in-out; opacity: 0; }
+.lamppost-bulb {
+  transition: filter 3.5s ease-in-out, fill 3.5s ease-in-out;
+  filter: drop-shadow(0 0 0 transparent);
+}
+#lighthouse-beam { transition: opacity 3.5s ease-in-out; }
+
+#scene.night-mode .sun  { opacity: 0; }
+#scene.night-mode .moon { opacity: 1; }
+#scene.night-mode .star-0 { opacity: 0.95; animation: starTwinkle 3s ease-in-out infinite; }
+#scene.night-mode .star-1 { opacity: 0.85; animation: starTwinkle 4s ease-in-out infinite -1.5s; }
+#scene.night-mode .star-2 { opacity: 0.75; animation: starTwinkle 3.5s ease-in-out infinite -0.7s; }
+#scene.night-mode .star-3 { opacity: 0.90; animation: starTwinkle 4.5s ease-in-out infinite -2.2s; }
+#scene.night-mode .lamppost-bulb {
+  filter: drop-shadow(0 0 14px #ffe06a) drop-shadow(0 0 6px #ffe9a8);
+  fill: #fff5cc;
+}
+#scene.night-mode #lighthouse-beam { opacity: 0.45 !important; }
+
+@keyframes starTwinkle {
+  0%,100% { opacity: 0.95; }
+  50%     { opacity: 0.35; }
+}
+
+/* Auto-fit non-1280x800 displays */
+@media (max-aspect-ratio: 1280/800), (min-aspect-ratio: 1280/800) {
+  #scene {
+    transform: scale(min(100vw / 1280, 100vh / 800));
+    transform-origin: center;
+  }
 }
