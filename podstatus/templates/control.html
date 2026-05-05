@@ -88,6 +88,36 @@
             margin-bottom: 0;
         }
         .btn-logout:hover { background: #21262d; }
+        .section-label {
+            margin: 1.25rem 0 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .section-label:first-of-type { margin-top: 0.5rem; }
+        .theatre-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .theatre-grid button {
+            margin-bottom: 0;
+            padding: 0.7rem 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: #30363d;
+            color: #e6edf3;
+            border: 1px solid #444c56;
+        }
+        .theatre-grid button:hover { background: #3a414b; }
+        .theatre-grid button.has-kill {
+            border-color: #6e2a28;
+            background: #3a1f1e;
+        }
+        .theatre-grid button.has-kill:hover { background: #4d2825; }
         .error {
             background: rgba(248,81,73,0.1);
             border: 1px solid rgba(248,81,73,0.4);
@@ -122,6 +152,41 @@
         {% else %}
             <button class="btn-chaos" onclick="trigger('chaos', this)">Trigger Chaos</button>
             <button class="btn-night" onclick="trigger('nightmode', this)">Toggle Night Mode</button>
+
+            <div class="section-label">Theatre — Signature</div>
+            <div class="theatre-grid">
+                <button class="has-kill" onclick="fireEvent('lightning-strike', this)">⚡ Lightning</button>
+                <button class="has-kill" onclick="fireEvent('rogue-wave', this)">🌊 Rogue wave</button>
+                <button class="has-kill" onclick="fireEvent('crane-mishap', this)">🏗️ Crane mishap</button>
+                <button class="has-kill" onclick="fireEvent('cargo-fire', this)">🔥 Cargo fire</button>
+                <button class="has-kill" onclick="fireEvent('pirate-broadside', this)">🏴‍☠️ Pirates</button>
+            </div>
+
+            <div class="section-label">Theatre — Cameos</div>
+            <div class="theatre-grid">
+                <button class="has-kill" onclick="fireEvent('kraken', this)">🦑 Kraken</button>
+                <button class="has-kill" onclick="fireEvent('ufo-abduction', this)">🛸 UFO</button>
+                <button onclick="fireEvent('jaws-fin', this)">🦈 Jaws fin</button>
+                <button onclick="fireEvent('nessie', this)">🦕 Nessie</button>
+                <button onclick="fireEvent('meteor', this)">☄️ Meteor</button>
+                <button onclick="fireEvent('godzilla', this)">🦖 Godzilla</button>
+                <button onclick="fireEvent('rubber-duck', this)">🦆 Rubber duck</button>
+            </div>
+
+            <div class="section-label">Theatre — Ambient</div>
+            <div class="theatre-grid">
+                <button onclick="fireEvent('tugboat', this)">⛵ Tugboat</button>
+                <button onclick="fireEvent('helicopter', this)">🚁 Helicopter</button>
+                <button onclick="fireEvent('lighthouse-pulse', this)">💡 Beam pulse</button>
+                <button onclick="fireEvent('fog-drift', this)">🌫️ Fog</button>
+                <button onclick="fireEvent('distant-lightning', this)">⛈️ Far lightning</button>
+                <button onclick="fireEvent('periscope', this)">🔭 Periscope</button>
+                <button onclick="fireEvent('whale-spout', this)">🐳 Whale</button>
+                <button onclick="fireEvent('seagull-frenzy', this)">🐦 Seagulls</button>
+                <button onclick="fireEvent('crane-swing', this)">🏗 Crane</button>
+                <button onclick="fireEvent('cloud-shadow', this)">☁️ Cloud shadow</button>
+            </div>
+
             <div class="status" id="status"></div>
             <form method="post" action="{{ url_for('control_logout') }}">
                 <button type="submit" class="btn-logout">Lock</button>
@@ -153,6 +218,33 @@
                 status.textContent = 'Error: ' + e.message;
             } finally {
                 buttons.forEach(b => b.disabled = false);
+            }
+        }
+
+        async function fireEvent(name, btn) {
+            const status = document.getElementById('status');
+            // Brief disable on the clicked button only — theatre events overlap
+            // freely from the operator's perspective, the kiosk handles ordering.
+            btn.disabled = true;
+            status.className = 'status';
+            status.textContent = '🎬 ' + name + '...';
+            try {
+                const res = await fetch('/control/event/' + encodeURIComponent(name), {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.status === 401) {
+                    window.location.reload();
+                    return;
+                }
+                const data = await res.json();
+                status.className = 'status ' + (res.ok ? 'ok' : 'err');
+                status.textContent = data.message || 'Done';
+            } catch (e) {
+                status.className = 'status err';
+                status.textContent = 'Error: ' + e.message;
+            } finally {
+                setTimeout(() => { btn.disabled = false; }, 1500);
             }
         }
     </script>
