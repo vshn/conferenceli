@@ -23,6 +23,7 @@ html, body {
 }
 #scene .layer,
 #scene #layer-fx,
+#scene #layer-fx-bright,
 #scene #layer-chrome {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -30,6 +31,10 @@ html, body {
 }
 #layer-fx { z-index: 50; }
 #layer-night-additive { z-index: 57; }
+/* Bright FX (explosion fireballs) sit above the night overlay so they
+   punch through the dusk dimming. Smoke/debris/splash stay on #layer-fx
+   below the overlay so they read as atmospheric in night mode. */
+#layer-fx-bright { z-index: 58; }
 #layer-chrome { z-index: 60; }
 
 #vshn-logo {
@@ -214,15 +219,25 @@ html, body {
 
 /* === Death scorch flame === */
 .flame { transform-origin: center bottom; transform-box: fill-box; }
-.flame-outer, .flame-inner {
+.flame-outer, .flame-mid, .flame-inner {
   transform-origin: center bottom; transform-box: fill-box;
   animation: flameFlicker 0.18s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 140, 26, 0.7));
 }
-.flame-inner { animation-delay: -0.06s; animation-duration: 0.13s; }
+.flame-mid   { animation-delay: -0.04s; animation-duration: 0.16s; }
+.flame-inner { animation-delay: -0.09s; animation-duration: 0.13s; }
+.flame-glow {
+  transform-origin: center; transform-box: fill-box;
+  animation: flameGlowPulse 0.4s ease-in-out infinite;
+}
 @keyframes flameFlicker {
   0%,100% { transform: scaleY(1)    scaleX(1);    }
-  33%     { transform: scaleY(1.18) scaleX(0.88); }
-  66%     { transform: scaleY(0.92) scaleX(1.10); }
+  33%     { transform: scaleY(1.22) scaleX(0.86); }
+  66%     { transform: scaleY(0.90) scaleX(1.12); }
+}
+@keyframes flameGlowPulse {
+  0%,100% { transform: scale(1);   opacity: 0.35; }
+  50%     { transform: scale(1.2); opacity: 0.55; }
 }
 
 /* === Delivery drone === */
@@ -278,7 +293,7 @@ html, body {
   .cloud, .wave, .water-glint, .ship-bob, #lighthouse-beam,
   .ship-lantern, .ship-lantern.relight, #lighthouse-blink,
   .drone-rotor,
-  .flame-outer, .flame-inner,
+  .flame-outer, .flame-mid, .flame-inner, .flame-glow,
   .star,
   .pod-container[data-state="Pending"] .container-body,
   .pod-container[data-state="Terminating"] .container-body,

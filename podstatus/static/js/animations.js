@@ -40,6 +40,122 @@ function getContainerScreenPos(index) {
   };
 }
 
+const DEATH_VARIANTS = ['explode', 'topple', 'crumple'];
+
+function pickDeathVariant() {
+  return DEATH_VARIANTS[Math.floor(Math.random() * DEATH_VARIANTS.length)];
+}
+
+function playExplode(g, pos, color, anime) {
+  if (pos) {
+    emitFlash(pos.x, pos.y, 95);              // huge outer fireball
+    emitFlash(pos.x, pos.y, 55);              // mid layer
+    emitFlash(pos.x, pos.y, 28);              // hot white-hot core
+    emitDebris(pos.x, pos.y, color, 42);
+    emitEmbers(pos.x, pos.y, 14);
+  }
+  g.style.transition = 'opacity 0.15s';
+  g.style.opacity = '0';
+
+  if (!reducedMotion && anime) {
+    const scene = document.getElementById('scene');
+    anime({
+      targets: scene,
+      translateX: [
+        { value: -4, duration: 30 },
+        { value:  6, duration: 30 },
+        { value: -3, duration: 30 },
+        { value:  0, duration: 30 },
+      ],
+      easing: 'linear',
+    });
+  }
+}
+
+function playTopple(g, pos, color, anime) {
+  const cinner = g.querySelector('.container-inner');
+  if (!cinner || !anime || reducedMotion) return playExplode(g, pos, color, anime);
+
+  const dir = Math.random() < 0.5 ? -1 : 1;  // tip left or right
+  cinner.style.transformBox = 'fill-box';
+  cinner.style.transformOrigin = dir < 0 ? '0% 100%' : '100% 100%';
+
+  if (pos) emitEmbers(pos.x, pos.y, 6);
+
+  // Creak: small wobble against the fall direction, then commit
+  anime({
+    targets: cinner,
+    rotate: [
+      { value: -dir * 5, duration: 110, easing: 'easeOutQuad' },
+      { value: 0,        duration: 70,  easing: 'easeInQuad' },
+    ],
+    complete: () => {
+      anime({
+        targets: cinner,
+        rotate: dir * 92,
+        translateX: dir * 16,
+        duration: 520,
+        easing: 'easeInQuad',
+        complete: () => {
+          // Impact: dust + flash + debris near the toppled side
+          if (pos) {
+            const ix = pos.x + dir * 36;
+            const iy = pos.y + 14;
+            emitFlash(ix, iy, 38);
+            emitDebris(ix, iy, color, 22);
+            emitSmokeBurst(ix, iy, 8);
+            emitEmbers(ix, iy, 6);
+          }
+          g.style.transition = 'opacity 0.25s';
+          g.style.opacity = '0';
+        },
+      });
+    },
+  });
+}
+
+function playCrumple(g, pos, color, anime) {
+  const cinner = g.querySelector('.container-inner');
+  if (!cinner || !anime || reducedMotion) return playExplode(g, pos, color, anime);
+
+  cinner.style.transformBox = 'fill-box';
+  cinner.style.transformOrigin = '50% 100%';
+
+  // Embers leak from seams as it buckles
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      if (pos && g.isConnected) {
+        emitEmbers(pos.x + (Math.random() - 0.5) * 30, pos.y, 3);
+      }
+    }, i * 90);
+  }
+
+  anime({
+    targets: cinner,
+    scaleY: [
+      { value: 0.94, duration: 120, easing: 'easeOutQuad' },
+      { value: 1.06, duration: 80,  easing: 'easeInOutQuad' },
+      { value: 0.08, duration: 480, easing: 'easeInQuad' },
+    ],
+    scaleX: [
+      { value: 1.04, duration: 120 },
+      { value: 0.96, duration: 80 },
+      { value: 1.32, duration: 480 },
+    ],
+    complete: () => {
+      // Final pop as the squashed shell collapses
+      if (pos) {
+        emitFlash(pos.x, pos.y, 44);
+        emitDebris(pos.x, pos.y, color, 24);
+        emitSmokeBurst(pos.x, pos.y - 4, 10);
+        emitEmbers(pos.x, pos.y, 8);
+      }
+      g.style.transition = 'opacity 0.25s';
+      g.style.opacity = '0';
+    },
+  });
+}
+
 function playDeath(index) {
   const g = document.getElementById(`pod-${index}`);
   if (!g) return;
@@ -55,31 +171,15 @@ function playDeath(index) {
   const pos = getContainerScreenPos(index);
   const color = CONTAINER_PALETTE_RGB[index] || '200,200,200';
   const anime = window.anime;
+  const variant = pickDeathVariant();
 
-  // Phase 2: detonation at +300ms
+  // Phase 2: variant-specific demise at +300ms (after the deathWarning shake)
   setTimeout(() => {
     if (!g.isConnected) return;
-    if (pos) {
-      emitFlash(pos.x, pos.y);
-      emitDebris(pos.x, pos.y, color, 38);
-      emitEmbers(pos.x, pos.y, 10);
-    }
-    g.style.transition = 'opacity 0.15s';
-    g.style.opacity = '0';
-
-    // Subtle screen shake (skip if reduced-motion)
-    if (!reducedMotion && anime) {
-      const scene = document.getElementById('scene');
-      anime({
-        targets: scene,
-        translateX: [
-          { value: -4, duration: 30 },
-          { value:  6, duration: 30 },
-          { value: -3, duration: 30 },
-          { value:  0, duration: 30 },
-        ],
-        easing: 'linear',
-      });
+    switch (variant) {
+      case 'topple':  playTopple(g, pos, color, anime); break;
+      case 'crumple': playCrumple(g, pos, color, anime); break;
+      default:        playExplode(g, pos, color, anime); break;
     }
   }, 300);
 
@@ -97,9 +197,10 @@ function playDeath(index) {
     }, 600 + i * 130);
   }
 
-  // Death visuals end ~1.4s in; transition to awaiting-respawn so a
-  // pod:running event triggers the drone delivery immediately. (Earlier
-  // means the drone visibly arrives while smoke is still clearing.)
+  // Death visuals end ~1.5s in (slightly later than 1.4s to cover slow variants);
+  // transition to awaiting-respawn so a pod:running event triggers the drone
+  // delivery immediately. Also clear any leftover transforms from variants
+  // so the respawned container appears upright.
   setTimeout(() => {
     if (!g.isConnected) {
       // Container's ship was sunk while we were dying — clean up state.
@@ -108,12 +209,18 @@ function playDeath(index) {
       queuedKill.delete(index);
       return;
     }
+    const cinner = g.querySelector('.container-inner');
+    if (cinner) {
+      cinner.style.transform = '';
+      cinner.style.transformOrigin = '';
+      cinner.style.transformBox = '';
+    }
     inFlight.set(index, 'awaiting-respawn');
     if (pendingRespawn.has(index)) {
       pendingRespawn.delete(index);
       playRespawn(index);
     }
-  }, 1400);
+  }, 1500);
 }
 
 function onPodRunning(index) {

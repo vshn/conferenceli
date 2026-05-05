@@ -479,17 +479,31 @@ export function showScorch(shipName, slot) {
   if (!flame) {
     flame = el('g', {
       class: `flame flame-${slot}`,
-      transform: `translate(${sx}, -10)`,
+      transform: `translate(${sx}, -8)`,
     }, inner);
+    // Soft glow disc casting light onto the deck around the base.
+    el('ellipse', {
+      class: 'flame-glow',
+      cx: 0, cy: -2, rx: 26, ry: 9,
+      fill: '#ff8c1a', opacity: 0.35,
+    }, flame);
+    // Outer flame body — ~2.4x larger than before, reaches ~52px tall.
     el('path', {
       class: 'flame-outer',
-      d: 'M0,0 Q-7,-9 -3,-18 Q0,-24 3,-18 Q7,-9 0,0 Z',
-      fill: '#ff8c1a', opacity: 0.9,
+      d: 'M0,0 Q-17,-22 -7,-44 Q0,-56 7,-44 Q17,-22 0,0 Z',
+      fill: '#ff8c1a', opacity: 0.92,
     }, flame);
+    // Mid orange layer for depth.
+    el('path', {
+      class: 'flame-mid',
+      d: 'M0,-2 Q-11,-18 -4,-34 Q0,-44 4,-34 Q11,-18 0,-2 Z',
+      fill: '#ffb347', opacity: 0.95,
+    }, flame);
+    // Bright inner core.
     el('path', {
       class: 'flame-inner',
-      d: 'M0,-2 Q-3,-7 -1,-13 Q0,-16 1,-13 Q3,-7 0,-2 Z',
-      fill: '#ffe066', opacity: 0.95,
+      d: 'M0,-4 Q-6,-14 -2,-28 Q0,-36 2,-28 Q6,-14 0,-4 Z',
+      fill: '#ffe066', opacity: 0.98,
     }, flame);
     // Auto-fade after smoke phase ends (per design Phase 4 aftermath)
     setTimeout(() => {

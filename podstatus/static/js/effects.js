@@ -4,6 +4,7 @@ const MAX_PARTICLES = 600;
 let pool = [];
 let active = [];
 let canvas, ctx;
+let brightCanvas, brightCtx;  // separate canvas above night-overlay for flashes
 let lastT = 0;
 let recurringEmitters = [];
 
@@ -56,13 +57,13 @@ export function emitSmokeWisp(x, y, size = 8, dark = false) {
   active.push(p);
 }
 
-export function emitFlash(x, y) {
+export function emitFlash(x, y, size = 28) {
   const p = getParticle(); if (!p) return;
   Object.assign(p, {
     alive: true, type: 'flash',
     x, y, vx: 0, vy: 0,
-    age: 0, life: 0.35,
-    size: 24,
+    age: 0, life: 0.45,
+    size,
     color: '255,210,80',
     rotation: 0, vr: 0, gravity: 0,
   });
@@ -170,6 +171,7 @@ function step(dt) {
   recurringEmitters.forEach(fn => fn(dt));
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  brightCtx.clearRect(0, 0, brightCanvas.width, brightCanvas.height);
   for (let i = active.length - 1; i >= 0; i--) {
     const p = active[i];
     p.age += dt;
@@ -188,46 +190,57 @@ function step(dt) {
 
 function drawParticle(p) {
   const t = p.age / p.life;
+  // Flash renders to the "bright" canvas which sits above the night-mode
+  // overlay so explosions actually punch through the dusk dimming.
+  const c = (p.type === 'flash') ? brightCtx : ctx;
   switch (p.type) {
     case 'smoke': {
       const r = p.size * (1 + t * 3);
       const a = (1 - t) * 0.65;
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(${p.color},${a})`;
-      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-      ctx.fill();
+      c.beginPath();
+      c.fillStyle = `rgba(${p.color},${a})`;
+      c.arc(p.x, p.y, r, 0, Math.PI * 2);
+      c.fill();
       break;
     }
     case 'flash': {
-      const r = p.size * (1 + t * 6);
-      const a = (1 - t) * 0.85;
-      const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-      grd.addColorStop(0,   `rgba(255,255,200,${a})`);
-      grd.addColorStop(0.4, `rgba(255,180,40,${a * 0.7})`);
-      grd.addColorStop(1,   `rgba(255,80,20,0)`);
-      ctx.fillStyle = grd;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-      ctx.fill();
+      // Tighter expansion (3.5x vs 7x) keeps per-pixel intensity high so the
+      // fireball reads big instead of fading into a thin haze.
+      const r = p.size * (0.9 + t * 2.6);
+      // Hold-then-fade opacity: stays near full brightness for the first
+      // ~40% of life, then quickly drops. Much punchier than linear.
+      const a = (1 - t * t) * 0.95;
+      const prevOp = c.globalCompositeOperation;
+      c.globalCompositeOperation = 'lighter';  // additive — makes it FLASH
+      const grd = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+      grd.addColorStop(0,    `rgba(255,255,220,${a})`);
+      grd.addColorStop(0.35, `rgba(255,210,90,${a * 0.85})`);
+      grd.addColorStop(0.7,  `rgba(255,120,30,${a * 0.45})`);
+      grd.addColorStop(1,    `rgba(180,40,10,0)`);
+      c.fillStyle = grd;
+      c.beginPath();
+      c.arc(p.x, p.y, r, 0, Math.PI * 2);
+      c.fill();
+      c.globalCompositeOperation = prevOp;
       break;
     }
     case 'debris': {
       const a = 1 - t;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rotation);
-      ctx.fillStyle = `rgba(${p.color},${a})`;
-      ctx.fillRect(-p.size, -p.size * 0.4, p.size * 2, p.size * 0.8);
-      ctx.restore();
+      c.save();
+      c.translate(p.x, p.y);
+      c.rotate(p.rotation);
+      c.fillStyle = `rgba(${p.color},${a})`;
+      c.fillRect(-p.size, -p.size * 0.4, p.size * 2, p.size * 0.8);
+      c.restore();
       break;
     }
     case 'ember':
     case 'splash': {
       const a = 1 - t;
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(${p.color},${a})`;
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+      c.beginPath();
+      c.fillStyle = `rgba(${p.color},${a})`;
+      c.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      c.fill();
       break;
     }
   }
@@ -236,6 +249,8 @@ function drawParticle(p) {
 export function init() {
   canvas = document.getElementById('layer-fx');
   ctx = canvas.getContext('2d');
+  brightCanvas = document.getElementById('layer-fx-bright');
+  brightCtx = brightCanvas.getContext('2d');
 
   function loop(t) {
     const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0;

@@ -11,7 +11,17 @@ from gevent import monkey
 
 monkey.patch_all()
 
-from flask import Flask, render_template, Response, jsonify, request, make_response
+from flask import (
+    Flask,
+    render_template,
+    Response,
+    jsonify,
+    request,
+    make_response,
+    session,
+    redirect,
+    url_for,
+)
 from kubernetes import client, watch, config as k8sconfig
 from kubernetes.config import ConfigException
 from gevent.pywsgi import WSGIServer
@@ -73,14 +83,16 @@ def create_app():
 
         return decorated
 
-    # Define routes
-    @app.route("/")
-    def index():
-        return render_template("index.html")
+    def requires_control_session(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not session.get("control_authed"):
+                return jsonify({"message": "Unauthorized"}), 401
+            return f(*args, **kwargs)
 
-    @app.route("/chaos")
-    @requires_auth
-    def chaos():
+        return decorated
+
+    def do_chaos():
         try:
             pods = v1.list_namespaced_pod(namespace).items
             running_pods = [pod for pod in pods if pod.status.phase == "Running"]
@@ -104,6 +116,21 @@ def create_app():
         except Exception as e:
             logging.error(f"Failed to list pods in namespace {namespace} because {e}")
             return jsonify({"message": "Failed to list pods"}), 500
+
+    def do_toggle_night_mode():
+        display_mode["value"] = "day" if display_mode["value"] == "night" else "night"
+        logging.info(f"Display mode toggled to {display_mode['value']}")
+        return jsonify({"mode": display_mode["value"]})
+
+    # Define routes
+    @app.route("/")
+    def index():
+        return render_template("index.html")
+
+    @app.route("/chaos")
+    @requires_auth
+    def chaos():
+        return do_chaos()
 
     @app.route("/stream_pods")
     def stream():
@@ -172,9 +199,37 @@ def create_app():
     @app.route("/nightmode")
     @requires_auth
     def toggle_night_mode():
-        display_mode["value"] = "day" if display_mode["value"] == "night" else "night"
-        logging.info(f"Display mode toggled to {display_mode['value']}")
-        return jsonify({"mode": display_mode["value"]})
+        return do_toggle_night_mode()
+
+    @app.route("/control", methods=["GET", "POST"])
+    def control():
+        error = None
+        if request.method == "POST":
+            password = request.form.get("password", "")
+            if password == config.CHAOS_BASIC_AUTH_PASSWORD:
+                session["control_authed"] = True
+                return redirect(url_for("control"))
+            error = "Invalid password"
+        return render_template(
+            "control.html",
+            authed=session.get("control_authed", False),
+            error=error,
+        )
+
+    @app.route("/control/logout", methods=["POST"])
+    def control_logout():
+        session.pop("control_authed", None)
+        return redirect(url_for("control"))
+
+    @app.route("/control/chaos", methods=["POST"])
+    @requires_control_session
+    def control_chaos():
+        return do_chaos()
+
+    @app.route("/control/nightmode", methods=["POST"])
+    @requires_control_session
+    def control_nightmode():
+        return do_toggle_night_mode()
 
     @app.route("/stream_mode")
     def stream_mode():

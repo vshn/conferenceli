@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0d1117">
+    <title>VSHN Control</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: #0d1117;
+            color: #e6edf3;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            padding-top: max(1.5rem, env(safe-area-inset-top));
+            padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+        }
+        .card {
+            width: 100%;
+            max-width: 420px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 14px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        h1 {
+            margin: 0 0 1.25rem;
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.02em;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            background: #0d1117;
+            color: #e6edf3;
+            margin-bottom: 0.75rem;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #1f6feb;
+            box-shadow: 0 0 0 3px rgba(31,111,235,0.3);
+        }
+        button {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 0.75rem;
+            color: white;
+            transition: background 0.15s ease, transform 0.05s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary { background: #238636; }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-chaos { background: #da3633; }
+        .btn-chaos:hover { background: #f85149; }
+        .btn-night { background: #1f6feb; }
+        .btn-night:hover { background: #388bfd; }
+        .btn-logout {
+            background: transparent;
+            color: #8b949e;
+            border: 1px solid #30363d;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            margin-bottom: 0;
+        }
+        .btn-logout:hover { background: #21262d; }
+        .error {
+            background: rgba(248,81,73,0.1);
+            border: 1px solid rgba(248,81,73,0.4);
+            color: #ff7b72;
+            padding: 0.6rem 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+        .status {
+            text-align: center;
+            margin-top: 0.5rem;
+            min-height: 1.25rem;
+            font-size: 0.9rem;
+            color: #8b949e;
+            word-break: break-word;
+        }
+        .status.ok { color: #3fb950; }
+        .status.err { color: #ff7b72; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>VSHN Control</h1>
+        {% if not authed %}
+            {% if error %}<div class="error">{{ error }}</div>{% endif %}
+            <form method="post" action="{{ url_for('control') }}" autocomplete="off">
+                <input type="password" name="password" placeholder="Password" autofocus required>
+                <button type="submit" class="btn-primary">Unlock</button>
+            </form>
+        {% else %}
+            <button class="btn-chaos" onclick="trigger('chaos', this)">Trigger Chaos</button>
+            <button class="btn-night" onclick="trigger('nightmode', this)">Toggle Night Mode</button>
+            <div class="status" id="status"></div>
+            <form method="post" action="{{ url_for('control_logout') }}">
+                <button type="submit" class="btn-logout">Lock</button>
+            </form>
+        {% endif %}
+    </div>
+    <script>
+        async function trigger(action, btn) {
+            const status = document.getElementById('status');
+            const buttons = document.querySelectorAll('.btn-chaos, .btn-night');
+            buttons.forEach(b => b.disabled = true);
+            status.className = 'status';
+            status.textContent = 'Working...';
+            try {
+                const res = await fetch('/control/' + action, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.status === 401) {
+                    window.location.reload();
+                    return;
+                }
+                const data = await res.json();
+                const msg = data.message || (data.mode ? 'Mode: ' + data.mode : 'Done');
+                status.className = 'status ' + (res.ok ? 'ok' : 'err');
+                status.textContent = msg;
+            } catch (e) {
+                status.className = 'status err';
+                status.textContent = 'Error: ' + e.message;
+            } finally {
+                buttons.forEach(b => b.disabled = false);
+            }
+        }
+    </script>
+</body>
+</html>
