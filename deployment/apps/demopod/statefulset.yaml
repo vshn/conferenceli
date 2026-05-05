@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: critical-prod
+  namespace: demopod
 spec:
   selector:
     matchLabels:
@@ -14,25 +15,13 @@ spec:
         app: critical-prod
     spec:
       terminationGracePeriodSeconds: 1
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - pc0
-                      - pc1
-                      - pc2
-            - weight: 1
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: NotIn
-                    values:
-                      - conferenceli
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: critical-prod
       tolerations:
         - key: "node.kubernetes.io/unreachable"
           operator: "Exists"
