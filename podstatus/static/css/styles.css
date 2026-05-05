@@ -157,11 +157,15 @@ html, body {
 .ship:nth-child(3) .ship-bob { animation: shipBob 3.1s ease-in-out infinite -1.3s; }
 .ship:nth-child(4) .ship-bob { animation: shipBob 3.6s ease-in-out infinite -2.1s; }
 
-/* === Idle ambiance: lighthouse === */
+/* === Idle ambiance: lighthouse ===
+ * Beam opacity is driven by night mode only — a real lighthouse beam is
+ * invisible in daylight. The wave-animated flag is handled with SMIL on
+ * the SVG itself (see scene.js), so it has no CSS keyframes here.
+ */
 #lighthouse-beam {
   transform-origin: 0 25px;
   animation: beamSpin 8s linear infinite;
-  opacity: 0.18 !important;
+  opacity: 0 !important;
 }
 @keyframes beamSpin {
   from { transform: rotate(0deg);   }

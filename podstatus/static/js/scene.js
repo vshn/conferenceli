@@ -112,22 +112,112 @@ function buildLighthouse() {
   // Tiny red blinker dot at peak
   el('circle', { id: 'lighthouse-blink', cx: 0, cy: -10, r: 3, fill: '#ff3030' }, g);
 
+  // Kubernetes flag flying above the lighthouse — the K8s logo is a ship's
+  // helm, so it fits the nautical theme: this lighthouse guides the pod-ships
+  // home under the Kubernetes flag.
+  el('rect', { x: -1, y: -130, width: 2, height: 117, fill: '#7a7a7a' }, g);
+  el('circle', { cx: 0, cy: -133, r: 3.2, fill: '#bdbdbd' }, g);
+  const flagPivot = el('g', { transform: 'translate(1, -127)' }, g);
+  const flag = el('g', { id: 'lighthouse-flag' }, flagPivot);
+
+  // Sinusoidal traveling-wave path. Amplitude grows linearly from the pole
+  // (anchored, t=0) to the free edge (t=1) so the fabric "snaps" away from
+  // the staff. Twelve evenly-spaced phase samples loop seamlessly because
+  // phase[0]=0 and phase[12]=2π yield identical paths.
+  const FLAG_W = 72, FLAG_H = 36, FLAG_TILT = 2;
+  const WAVE_AMP = 4.5, WAVELENGTH = 50, WAVE_FRAMES = 12, WAVE_DUR = '2.2s';
+  const segs = 10;
+  const phases = Array.from({ length: WAVE_FRAMES + 1 }, (_, i) => (i / WAVE_FRAMES) * 2 * Math.PI);
+  const flagPathFor = (phase) => {
+    let d = '';
+    for (let i = 0; i <= segs; i++) {
+      const x = (i / segs) * FLAG_W;
+      const t = x / FLAG_W;
+      const y = FLAG_TILT * t + (WAVE_AMP * t) * Math.sin((2 * Math.PI * x) / WAVELENGTH + phase);
+      d += (i === 0 ? 'M' : 'L') + x.toFixed(2) + ',' + y.toFixed(2) + ' ';
+    }
+    for (let i = segs; i >= 0; i--) {
+      const x = (i / segs) * FLAG_W;
+      const t = x / FLAG_W;
+      const y = FLAG_H + FLAG_TILT * t + (WAVE_AMP * t) * Math.sin((2 * Math.PI * x) / WAVELENGTH + phase);
+      d += 'L' + x.toFixed(2) + ',' + y.toFixed(2) + ' ';
+    }
+    return d + 'Z';
+  };
+  const flagDValues = phases.map(flagPathFor);
+  const flagPath = el('path', {
+    d: flagDValues[0],
+    fill: '#326ce5', stroke: '#1f4ea3', 'stroke-width': 1,
+  }, flag);
+  el('animate', {
+    attributeName: 'd',
+    values: flagDValues.join(';'),
+    dur: WAVE_DUR,
+    repeatCount: 'indefinite',
+  }, flagPath);
+
+  // K8s logo "rides" the wave at its own x so it doesn't visually detach
+  // from the fabric. We translate the logo group by the wave's y at x=fcx.
+  const fcx = 36, fcy = 19, fr = 13;
+  const logoT = fcx / FLAG_W;
+  const logoAmp = WAVE_AMP * logoT;
+  const logoTransformValues = phases.map((p) =>
+    `0 ${(logoAmp * Math.sin((2 * Math.PI * fcx) / WAVELENGTH + p)).toFixed(2)}`
+  ).join(';');
+  const logoGroup = el('g', { id: 'lighthouse-flag-logo' }, flag);
+  el('animateTransform', {
+    attributeName: 'transform',
+    type: 'translate',
+    values: logoTransformValues,
+    dur: WAVE_DUR,
+    repeatCount: 'indefinite',
+  }, logoGroup);
+
+  const heptaPts = [];
+  for (let i = 0; i < 7; i++) {
+    const a = i * (2 * Math.PI / 7) - Math.PI / 2;
+    heptaPts.push(`${(fcx + fr * Math.cos(a)).toFixed(2)},${(fcy + fr * Math.sin(a)).toFixed(2)}`);
+  }
+  el('polygon', {
+    points: heptaPts.join(' '),
+    fill: 'none', stroke: '#fff', 'stroke-width': 1.8,
+  }, logoGroup);
+  for (let i = 0; i < 7; i++) {
+    const a = i * (2 * Math.PI / 7) - Math.PI / 2;
+    el('line', {
+      x1: fcx, y1: fcy,
+      x2: (fcx + fr * Math.cos(a)).toFixed(2),
+      y2: (fcy + fr * Math.sin(a)).toFixed(2),
+      stroke: '#fff', 'stroke-width': 1.2,
+    }, logoGroup);
+  }
+  el('circle', { cx: fcx, cy: fcy, r: 3, fill: 'none', stroke: '#fff', 'stroke-width': 1.5 }, logoGroup);
+
   // Beam + gradient go into the night-additive layer so the rotating beam
   // shines through the dusk overlay. Wrapped in the same translate as the
   // lighthouse so coords stay relative to the lamp room.
+  // The polygon's bbox spans x=[-1200, 0]: 0% offset = far tip, 100% = lamp.
+  // Stops are arranged so the beam is brightest at the source and fades to
+  // zero well before reaching the scene edge, eliminating the hard cutoff.
   const beamGroup = el('g', { transform: 'translate(1180, 360)' }, nightLayer);
   const ndefs = el('defs', {}, beamGroup);
   ndefs.innerHTML = `
     <linearGradient id="beamGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%"  stop-color="#fff8c0" stop-opacity="0.8"/>
-      <stop offset="100%" stop-color="#fff8c0" stop-opacity="0"/>
+      <stop offset="0%"   stop-color="#fff8c0" stop-opacity="0"/>
+      <stop offset="35%"  stop-color="#fff8c0" stop-opacity="0.12"/>
+      <stop offset="70%"  stop-color="#fffae0" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#fffbe6" stop-opacity="0.85"/>
     </linearGradient>
+    <filter id="beamSoft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
   `;
   el('polygon', {
     id: 'lighthouse-beam',
     points: '0,25 -1200,-200 -1200,250',
     fill: 'url(#beamGradient)',
-    opacity: 0.0,  // animated via CSS
+    filter: 'url(#beamSoft)',
+    opacity: 0.0,  // animated via CSS (off in day, on in night)
   }, beamGroup);
 }
 
