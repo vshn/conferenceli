@@ -27,7 +27,7 @@ spec:
             - |
               name: blinkstick
               groups:
-                - count: 10
+                - count: 1
                   usb:
                     - vendor: "20a0"
                       product: "41e5"

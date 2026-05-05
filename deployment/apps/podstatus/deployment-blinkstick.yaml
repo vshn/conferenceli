@@ -32,4 +32,4 @@ spec:
                 name: podstatus-env
           resources:
             limits:
-              squat.ai/blinkstick: "1"
+              devic.es/blinkstick: "1"
