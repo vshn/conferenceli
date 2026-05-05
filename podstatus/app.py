@@ -284,6 +284,13 @@ def create_app():
     def control_chaos_index(pod_index):
         return do_chaos_index(pod_index)
 
+    # The kiosk page itself triggers targeted kills at the climax of a theatre
+    # animation. The kiosk has no session, so this sibling endpoint is open —
+    # same risk profile as /stream_pods, which is also public.
+    @app.route("/theatre/chaos/<pod_index>", methods=["POST"])
+    def theatre_chaos_index(pod_index):
+        return do_chaos_index(pod_index)
+
     @app.route("/control/event/<event_name>", methods=["POST"])
     @requires_control_session
     def control_event(event_name):
