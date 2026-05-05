@@ -3,6 +3,8 @@ import sys
 import logging
 import random
 import threading
+import time
+from functools import wraps
 
 # Patch all to make the app gevent compatible
 from gevent import monkey
@@ -10,7 +12,6 @@ from gevent import monkey
 monkey.patch_all()
 
 from flask import Flask, render_template, Response, jsonify, request, make_response
-from flask_bootstrap import Bootstrap5
 from kubernetes import client, watch, config as k8sconfig
 from kubernetes.config import ConfigException
 from gevent.pywsgi import WSGIServer
@@ -20,21 +21,14 @@ from config import *
 # Define stop event for graceful shutdown
 stop_event = threading.Event()
 
+# In-memory display mode (no persistence; resets to 'day' on app restart)
+display_mode = {"value": "day"}
+
 
 def create_app():
     # Initialize the Flask app
     app = Flask(__name__)
     app.secret_key = config.FLASK_APP_SECRET_KEY
-    bootstrap = Bootstrap5(app)
-
-    # Basic styling
-    app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "darkly"
-    app.config["BOOTSTRAP_SERVE_LOCAL"] = True
-
-    # Add context processor for background image
-    @app.context_processor
-    def inject_background():
-        return {"background_image": config.BACKGROUND_IMAGE}
 
     # Load kubeconfig or use in-cluster configuration
     kubeconfig_path = config.KUBECONFIG
@@ -70,6 +64,7 @@ def create_app():
         return response
 
     def requires_auth(f):
+        @wraps(f)
         def decorated(*args, **kwargs):
             auth = request.authorization
             if not auth or not check_auth(auth.username, auth.password):
@@ -173,6 +168,28 @@ def create_app():
                 logging.error(f"Error watching nodes: {e}")
 
         return Response(watch_nodes(), content_type="text/event-stream")
+
+    @app.route("/nightmode")
+    @requires_auth
+    def toggle_night_mode():
+        display_mode["value"] = "day" if display_mode["value"] == "night" else "night"
+        logging.info(f"Display mode toggled to {display_mode['value']}")
+        return jsonify({"mode": display_mode["value"]})
+
+    @app.route("/stream_mode")
+    def stream_mode():
+        # Polls the in-memory mode every second and streams changes via SSE.
+        # gevent monkey-patches time.sleep so this is cooperative.
+        def watch_mode():
+            last = None
+            while True:
+                current = display_mode["value"]
+                if current != last:
+                    last = current
+                    yield f'data: {{"mode": "{current}"}}\n\n'
+                time.sleep(1)
+
+        return Response(watch_mode(), content_type="text/event-stream")
 
     @app.route("/shutdown", methods=["POST"])
     def shutdown():

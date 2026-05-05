@@ -1,95 +1,26 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Status of Pods</h1>
-<div id="pod-status">
-    Loading...
+<div id="stage">
+  <div id="scene">
+    <!-- Layers (back-to-front), populated by scene.js -->
+    <svg id="layer-sky" class="layer" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice"></svg>
+    <svg id="layer-background" class="layer" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice"></svg>
+    <svg id="layer-water" class="layer" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice"></svg>
+    <svg id="layer-dock" class="layer" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice"></svg>
+    <svg id="layer-ships" class="layer" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice"></svg>
+    <svg id="layer-foreground" class="layer" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice"></svg>
+    <canvas id="layer-fx" width="1280" height="800"></canvas>
+    <div id="night-overlay"></div>
+    <svg id="layer-night-additive" class="layer" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice"></svg>
+    <div id="layer-chrome">
+      <div id="vshn-logo"></div>
+      <div id="qr-card"></div>
+      <div id="kill-counter">
+        <span class="kc-label">💥 Pods destroyed:</span>
+        <span class="kc-value">0</span>
+      </div>
+    </div>
+  </div>
 </div>
-
-<h1>Status of Nodes</h1>
-<div id="node-status">
-    Loading...
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Pod status stream
-        setTimeout(function () {
-            const eventSource = new EventSource("/stream_pods");
-            let firstEvent = true;
-
-            eventSource.onmessage = function (event) {
-                const data = JSON.parse(event.data.replaceAll("'", '"'));
-                const podStatus = data;
-                const podName = podStatus.name;
-                const podStatusValue = podStatus.status;
-                const podIndex = podStatus.index;
-                const podNode = podStatus.node;
-
-                if (firstEvent) {
-                    document.getElementById('pod-status').innerHTML = '';
-                    firstEvent = false;
-                }
-
-                let podElement = document.getElementById(podName);
-                if (!podElement) {
-                    podElement = document.createElement('div');
-                    podElement.id = podName;
-                    podElement.className = 'pod';
-                    document.getElementById('pod-status').appendChild(podElement);
-                }
-
-                podElement.innerHTML = `<strong>${podName}</strong>: ${podStatusValue} on ${podNode}`;
-                podElement.style.backgroundColor = podStatusValue === 'Running' ? '#00bc8c' :
-                    podStatusValue === 'Pending' ? '#f39c12' : '#e74c3c';
-            };
-        }, 1000); // Delay of 1 second before initializing SSE connection
-
-        // Node status stream
-        setTimeout(function () {
-            const eventSourceNodes = new EventSource("/stream_nodes");
-            let firstEventNodes = true;
-
-            eventSourceNodes.onmessage = function (event) {
-                const data = JSON.parse(event.data.replaceAll("'", '"'));
-                const nodeName = data.name;
-                const nodeStatusValue = data.status;
-                const kubeletVersion = data.kubeletVersion;
-                const architecture = data.architecture;
-                const kernelVersion = data.kernelVersion;
-                const osImage = data.osImage;
-
-                if (firstEventNodes) {
-                    document.getElementById('node-status').innerHTML = '';
-                    firstEventNodes = false;
-                }
-
-                let nodeElement = document.getElementById(nodeName);
-                if (!nodeElement) {
-                    nodeElement = document.createElement('div');
-                    nodeElement.id = nodeName;
-                    nodeElement.className = 'node';
-                    document.getElementById('node-status').appendChild(nodeElement);
-                }
-
-                nodeElement.innerHTML = `
-                    <strong>${nodeName}</strong><br>
-                    ${kubeletVersion} - ${osImage} (${kernelVersion})
-                `;
-                nodeElement.style.backgroundColor = nodeStatusValue === 'KubeletReady' ? '#00bc8c' : '#e74c3c';
-            };
-        }, 1000); // Delay of 1 second before initializing SSE connection
-
-    });
-</script>
-<style>
-    .pod,
-    .node {
-        padding: 10px;
-        margin: 5px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        color: white;
-    }
-</style>
 {% endblock %}
