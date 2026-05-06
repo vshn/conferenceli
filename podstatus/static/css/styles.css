@@ -349,6 +349,13 @@ html, body {
   fill: #fff5cc;
 }
 #scene.night-mode #lighthouse-beam { opacity: 0.45 !important; }
+/* Theatre lighthouse pulse — overrides both the day-mode hide rule and the
+ * night-mode 0.45 dim so the beam visibly sweeps the scene during the event. */
+#lighthouse-beam.theatre-pulsing {
+  opacity: 0.85 !important;
+  transition: opacity 0.6s ease-in-out;
+  filter: drop-shadow(0 0 18px #fff8c0) drop-shadow(0 0 36px #ffe44a);
+}
 
 @keyframes starTwinkle {
   0%,100% { opacity: 0.95; }

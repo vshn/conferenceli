@@ -111,47 +111,88 @@ register({
     const pos = getContainerScenePos(idx);
     if (!pos) return;
 
-    const w = layer('layer-water');
+    // Render in foreground so the wave wraps OVER the ship's container at impact.
+    const fg = layer('layer-foreground');
     const fromLeft = pos.x > 640;  // wave rolls in from the side AWAY from target
-    const startX = fromLeft ? -200 : 1480;
+    const startX = fromLeft ? -260 : 1540;
     const dir = fromLeft ? 1 : -1;
     const peakX = pos.x;
 
-    // The wave is a swelling crescent that translates from off-screen to peakX.
-    const g = el('g', { class: 'theatre-rogue-wave', transform: `translate(${startX},720)` }, w);
-    el('path', {
-      d: 'M-160,0 Q-80,-70 0,-80 Q80,-70 160,0 Q80,8 0,4 Q-80,8 -160,0 Z',
-      fill: '#1f4f6c', opacity: 0.95,
-    }, g);
-    el('path', {
-      d: 'M-130,-30 Q-60,-78 0,-86 Q60,-78 130,-30 Q60,-50 0,-58 Q-60,-50 -130,-30 Z',
-      fill: '#9fc8da', opacity: 0.85,
-    }, g);
-    // Foam crest
-    el('ellipse', { cx: 0, cy: -86, rx: 90, ry: 6, fill: '#ffffff', opacity: 0.9 }, g);
+    // The wave is built so it FACES the target. The local +X axis points in
+    // the direction of travel; we apply scale(dir,1) so the curl always
+    // breaks toward the container.
+    const g = el('g', {
+      class: 'theatre-rogue-wave',
+      transform: `translate(${startX},720) scale(${dir},1)`,
+    }, fg);
 
+    // Wave body — large breaking-wave silhouette with a curling lip.
+    // The shape goes:
+    //   - low base at the back (left side, behind the curl)
+    //   - rising swell in the middle
+    //   - tall curl at the front (right side) that hooks down
+    //   - returns along the underside of the curl back to the base
+    el('path', {
+      d: 'M-220,4 L-220,-10 Q-160,-30 -90,-46 Q-30,-58 30,-78 Q90,-94 130,-72 Q160,-50 158,-22 Q150,8 110,18 Q80,12 70,-12 Q60,-36 30,-44 Q-20,-32 -50,-12 Q-80,4 -120,8 L-220,8 Z',
+      fill: '#1f4f6c', stroke: '#0c2c3e', 'stroke-width': 1.2,
+    }, g);
+    // Translucent face (lighter teal) showing the inside of the curl
+    el('path', {
+      d: 'M-140,-22 Q-60,-58 30,-72 Q86,-78 122,-58 Q138,-40 132,-20 Q102,-6 84,-22 Q66,-44 30,-46 Q-30,-30 -80,-12 Q-110,-8 -140,-12 Z',
+      fill: '#3a7d9a', opacity: 0.85,
+    }, g);
+    // Highlight stripe just under the lip
+    el('path', {
+      d: 'M-50,-44 Q20,-72 100,-66',
+      fill: 'none', stroke: '#9fc8da', 'stroke-width': 4, opacity: 0.85,
+      'stroke-linecap': 'round',
+    }, g);
+    // Foam crest along the very top of the lip
+    el('path', {
+      d: 'M-30,-72 Q40,-92 110,-78 Q120,-66 100,-60 Q60,-72 20,-66 Q-10,-58 -30,-58 Z',
+      fill: '#ffffff', opacity: 0.95,
+    }, g);
+    // Spray flecks above the crest
+    for (let i = 0; i < 6; i++) {
+      el('circle', {
+        cx: -10 + i * 20 + rand(-4, 4),
+        cy: -90 + rand(-8, 4),
+        r: rand(1.2, 3),
+        fill: '#ffffff', opacity: 0.85,
+      }, g);
+    }
+    // Foam at the base where the wave meets the water
+    el('path', {
+      d: 'M-220,8 Q-100,2 30,8 Q120,12 158,8 L158,18 L-220,18 Z',
+      fill: '#dceaf2', opacity: 0.7,
+    }, g);
+
+    // ---- Roll in: translate + grow ----
     await tween({
-      from: 0, to: 1, duration: 2200, easing: 'easeInQuad',
+      from: 0, to: 1, duration: 2000, easing: 'easeInQuad',
       onUpdate: (t) => {
-        const x = startX + (peakX - startX) * t;
-        const sy = 720 + (1 - t) * 6;
-        const sc = 0.6 + t * 0.5;
-        g.setAttribute('transform', `translate(${x},${sy}) scale(${sc})`);
+        const x = startX + (peakX - 80 * dir - startX) * t;
+        const sy = 720 + (1 - t) * 8;
+        const sc = 0.55 + t * 0.6;
+        g.setAttribute('transform', `translate(${x},${sy}) scale(${dir * sc},${sc})`);
       },
     });
-    // Crash at the ship
-    emitSplash(pos.x - 40 * dir, pos.y + 4, 22);
-    emitSplash(pos.x, pos.y, 28);
-    emitSplash(pos.x + 40 * dir, pos.y + 4, 22);
+
+    // ---- Crash on the ship ----
+    emitSplash(pos.x - 40 * dir, pos.y + 4, 24);
+    emitSplash(pos.x, pos.y - 4, 32);
+    emitSplash(pos.x + 40 * dir, pos.y + 4, 24);
+    emitSplash(pos.x, pos.y - 30, 18);  // spray up over the container
     killPod(idx);
-    // Wave continues, breaks, recedes
+
+    // ---- Break + recede: continue past the target, fade ----
     await tween({
-      from: 1, to: 1.6, duration: 900, easing: 'easeOutQuad',
+      from: 0, to: 1, duration: 900, easing: 'easeOutQuad',
       onUpdate: (t) => {
-        const x = peakX + dir * (t - 1) * 200;
-        const sc = 0.6 + (1.4 - (t - 1) * 0.6) * 0.5;
-        g.setAttribute('transform', `translate(${x},720) scale(${sc})`);
-        g.setAttribute('opacity', String(Math.max(0, 1 - (t - 1) * 1.6)));
+        const x = peakX - 80 * dir + dir * t * 240;
+        const sc = 1.15 - t * 0.4;
+        g.setAttribute('transform', `translate(${x},${720 + t * 6}) scale(${dir * sc},${sc})`);
+        g.setAttribute('opacity', String(Math.max(0, 1 - t * 1.4)));
       },
     });
     g.remove();
@@ -297,27 +338,84 @@ register({
       class: 'theatre-pirate-ship',
       transform: `translate(${startX},${shipY}) scale(${dir},1)`,
     }, fg);
-    // Hull
-    el('polygon', { points: '-90,0 90,0 70,28 -70,28', fill: '#3a2415', stroke: '#1a0e08', 'stroke-width': 1.5 }, g);
-    // Deck
-    el('rect', { x: -90, y: -6, width: 180, height: 6, fill: '#5a3a22' }, g);
+
+    // ---- Hull ----
+    // Single closed path: gunwale across the top, curved sides down to a
+    // narrower keel. No self-intersections — the previous version zig-zagged
+    // backward through itself which left holes after fill.
+    el('path', {
+      d: 'M-110,-6 L110,-6 Q124,8 96,30 L-96,30 Q-124,8 -110,-6 Z',
+      fill: '#3a2415', stroke: '#1a0e08', 'stroke-width': 1.5,
+    }, g);
+    // Plank line along the hull
+    el('line', { x1: -100, y1: 14, x2: 100, y2: 14, stroke: '#1a0e08', 'stroke-width': 0.7, opacity: 0.8 }, g);
+    // Gunwale rim (top edge of the hull)
+    el('rect', { x: -110, y: -10, width: 220, height: 5, fill: '#5a3a22', stroke: '#2a1810', 'stroke-width': 0.6 }, g);
+    // Stern castle (raised quarterdeck at the back-right)
+    el('rect', { x: 60, y: -24, width: 44, height: 14, fill: '#5a3a22', stroke: '#2a1810', 'stroke-width': 0.6 }, g);
+    el('rect', { x: 68, y: -20, width: 6, height: 6, fill: '#7ec0e8' }, g);
+    el('rect', { x: 84, y: -20, width: 6, height: 6, fill: '#7ec0e8' }, g);
+    el('polygon', { points: '60,-24 56,-10 60,-10', fill: '#3a2415', stroke: '#2a1810', 'stroke-width': 0.4 }, g);
+    // Bowsprit (pointed beam at the front)
+    el('line', { x1: -110, y1: -4, x2: -140, y2: -18, stroke: '#2a1810', 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
+
+    // ---- Cannon ports along hull ----
+    for (const px of [-72, -36, 0, 36]) {
+      el('rect', { x: px - 5, y: 4, width: 10, height: 8, fill: '#0a0a0a' }, g);
+      el('rect', { x: px - 4, y: 5, width: 8, height: 6, fill: '#3a1a08' }, g);
+    }
+
+    // ---- Masts + sails ----
     // Main mast
-    el('rect', { x: -2, y: -110, width: 4, height: 110, fill: '#2a1810' }, g);
-    // Sails — black with skull
-    el('path', { d: 'M-44,-100 Q-22,-94 0,-100 L0,-50 Q-22,-44 -44,-50 Z', fill: '#1a1a1a' }, g);
-    el('path', { d: 'M0,-100 Q22,-94 44,-100 L44,-50 Q22,-44 0,-50 Z', fill: '#1a1a1a' }, g);
-    // Tiny skull-and-crossbones (just a white circle as proxy)
-    el('circle', { cx: 0, cy: -78, r: 5, fill: '#f0f0f0' }, g);
-    el('rect', { x: -2, y: -75, width: 4, height: 2, fill: '#1a1a1a' }, g);
+    el('rect', { x: -3, y: -130, width: 5, height: 122, fill: '#2a1810' }, g);
+    // Foremast (forward of main)
+    el('rect', { x: -52, y: -110, width: 4, height: 102, fill: '#2a1810' }, g);
+    // Yards (horizontal cross-spars)
+    el('rect', { x: -54, y: -114, width: 90, height: 3, fill: '#2a1810' }, g);
+    el('rect', { x: -90, y: -94, width: 80, height: 2.5, fill: '#2a1810' }, g);
+    // Main sail — billowed, off-white canvas with curved bottom
+    el('path', {
+      d: 'M-44,-110 Q0,-104 40,-110 Q44,-72 32,-50 Q0,-44 -36,-50 Q-44,-72 -44,-110 Z',
+      fill: '#e6dcc0', stroke: '#7a6a40', 'stroke-width': 1, opacity: 0.95,
+    }, g);
+    // Sail seam highlight
+    el('path', {
+      d: 'M-40,-100 Q0,-96 38,-100',
+      fill: 'none', stroke: '#7a6a40', 'stroke-width': 0.6, opacity: 0.7,
+    }, g);
+    // Skull on the main sail
+    el('circle', { cx: -2, cy: -80, r: 7, fill: '#1a1a1a' }, g);
+    el('circle', { cx: -4.5, cy: -82, r: 1.4, fill: '#e6dcc0' }, g);
+    el('circle', { cx: 0.5, cy: -82, r: 1.4, fill: '#e6dcc0' }, g);
+    el('rect', { x: -3, y: -76, width: 2, height: 2, fill: '#e6dcc0' }, g);
+    // Crossed bones
+    el('line', { x1: -10, y1: -68, x2: 6, y2: -76, stroke: '#1a1a1a', 'stroke-width': 1.6 }, g);
+    el('line', { x1: -10, y1: -76, x2: 6, y2: -68, stroke: '#1a1a1a', 'stroke-width': 1.6 }, g);
+    // Foresail (smaller, in front of main)
+    el('path', {
+      d: 'M-90,-92 Q-72,-86 -52,-92 Q-50,-72 -56,-58 Q-72,-54 -88,-58 Q-90,-72 -90,-92 Z',
+      fill: '#d8cfb0', stroke: '#7a6a40', 'stroke-width': 1, opacity: 0.95,
+    }, g);
     // Crow's nest
-    el('rect', { x: -8, y: -118, width: 16, height: 6, fill: '#3a2415' }, g);
+    el('path', { d: 'M-12,-130 L12,-130 L8,-122 L-8,-122 Z', fill: '#3a2415', stroke: '#1a0e08', 'stroke-width': 0.6 }, g);
     // Pirate flag
-    el('rect', { x: 2, y: -132, width: 22, height: 14, fill: '#0a0a0a' }, g);
-    el('circle', { cx: 13, cy: -125, r: 3, fill: '#f0f0f0' }, g);
-    // Cannon port
+    el('line', { x1: -0.5, y1: -148, x2: -0.5, y2: -130, stroke: '#2a1810', 'stroke-width': 0.8 }, g);
+    const flag = el('path', {
+      d: 'M0,-148 L26,-145 L26,-132 L0,-134 Z',
+      fill: '#0a0a0a', stroke: '#2a1810', 'stroke-width': 0.5,
+    }, g);
+    el('circle', { cx: 12, cy: -140, r: 2.5, fill: '#f0f0f0' }, g);
+
+    // Subtle flag flap
+    let flapPhase = 0;
+    const flapTimer = setInterval(() => {
+      flapPhase += 0.4;
+      const k = Math.sin(flapPhase) * 1.5;
+      flag.setAttribute('d', `M0,-148 L26,${-145 + k} L26,${-132 + k} L0,-134 Z`);
+    }, 80);
+
+    // Cannon port that fires (lined up with the broadside)
     const cannonX = 60 * dir;
-    el('rect', { x: cannonX - 10, y: 4, width: 20, height: 10, fill: '#0a0a0a' }, g);
-    el('rect', { x: cannonX - 4, y: 8, width: 12 * dir, height: 4, fill: '#1a1a1a' }, g);
 
     // Sail in
     await tween({
@@ -361,6 +459,7 @@ register({
       from: cruiseX, to: fromLeft ? 1440 : -160, duration: 4500, easing: 'easeInCubic',
       onUpdate: (x) => g.setAttribute('transform', `translate(${x},${shipY}) scale(${dir},1)`),
     });
+    clearInterval(flapTimer);
     g.remove();
   },
 });

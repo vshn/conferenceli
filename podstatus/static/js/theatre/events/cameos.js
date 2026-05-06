@@ -23,66 +23,154 @@ register({
     const pos = getContainerScenePos(idx);
     if (!pos) return;
 
+    // Render in foreground so tentacles wrap *over* the ship/container.
+    const fg = layer('layer-foreground');
     const w = layer('layer-water');
-    // Anchor the tentacle base at the water line directly below the target.
-    const baseX = pos.x + rand(-20, 20);
+    const baseX = pos.x;
     const baseY = 730;
 
     // Water churns first
     for (let i = 0; i < 6; i++) {
-      emitSplash(baseX + rand(-50, 50), baseY, 8);
+      emitSplash(baseX + rand(-60, 60), baseY, 8);
       await sleep(90);
     }
 
-    const g = el('g', {
-      class: 'theatre-kraken',
-      transform: `translate(${baseX},${baseY + 200})`,
+    // ---- Body (head + eye) emerging from water ----
+    const body = el('g', {
+      class: 'theatre-kraken-body',
+      transform: `translate(${baseX},${baseY + 120})`,
+      opacity: 0,
     }, w);
-    // Tapered tentacle — wider at base, curling tip
+    // Bulbous mantle/head
     el('path', {
-      d: 'M-18,0 Q-22,-80 -10,-160 Q-2,-200 8,-220 Q22,-240 28,-220 Q34,-200 26,-160 Q14,-80 18,0 Z',
-      fill: '#3a1a4a', stroke: '#1a0820', 'stroke-width': 1.5,
-    }, g);
-    // Suckers (dotted line down the inside)
-    for (let yy = -20; yy > -200; yy -= 18) {
-      el('circle', { cx: -4 - (yy / 200) * 8, cy: yy, r: 3, fill: '#7a3a8a' }, g);
-    }
-    // Tip curl detail
-    el('circle', { cx: 16, cy: -218, r: 4, fill: '#2a0a3a' }, g);
+      d: 'M-70,20 Q-86,-30 -50,-58 Q-20,-78 0,-78 Q20,-78 50,-58 Q86,-30 70,20 Q40,32 0,32 Q-40,32 -70,20 Z',
+      fill: '#3a1a4a', stroke: '#1a0820', 'stroke-width': 2,
+    }, body);
+    // Highlight
+    el('path', {
+      d: 'M-40,-50 Q-10,-66 30,-58',
+      fill: 'none', stroke: '#7a4a9a', 'stroke-width': 3, opacity: 0.7,
+    }, body);
+    // Eye (sclera + iris + pupil) — large and menacing
+    el('ellipse', { cx: -22, cy: -30, rx: 14, ry: 11, fill: '#fff8e0' }, body);
+    el('circle',  { cx: -22, cy: -30, r: 8, fill: '#ffd040' }, body);
+    el('ellipse', { cx: -22, cy: -30, rx: 2.5, ry: 9, fill: '#0a0510' }, body);
+    el('ellipse', { cx: -19, cy: -34, rx: 2, ry: 1.5, fill: '#fff' }, body);
+    // Beak / mouth
+    el('path', { d: 'M-8,8 L0,18 L8,8 L0,-2 Z', fill: '#0a0510', stroke: '#1a0820', 'stroke-width': 0.6 }, body);
 
-    // Rise from beneath water to over the container
-    const riseToY = pos.y + 30;  // tip ends just above container
-    await tween({
-      from: baseY + 200, to: riseToY, duration: 1400, easing: 'easeOutQuad',
-      onUpdate: (y) => g.setAttribute('transform', `translate(${baseX},${y})`),
+    // ---- Three tentacles, fanning out from the body ----
+    // Each tentacle is its own group rooted at the head's base. We tween a
+    // shared rise factor so they emerge together, then animate the SLAP one
+    // (the front tentacle) snapping down on the target.
+    function makeTentacle(parent, opts) {
+      // opts: { rootX, rootY, dx, dy, scale, baseAngle, fillDark, fillLight }
+      const tg = el('g', {
+        class: 'theatre-kraken-tentacle',
+        transform: `translate(${opts.rootX},${opts.rootY}) rotate(${opts.baseAngle}) scale(${opts.scale})`,
+      }, parent);
+      // Long curling tentacle path: wider at base, tapers + curls at tip.
+      el('path', {
+        d: 'M-14,0 Q-26,-60 -14,-120 Q-2,-180 18,-200 Q40,-218 50,-194 Q42,-176 26,-184 Q14,-178 12,-160 Q4,-100 14,-50 Q18,-20 14,0 Z',
+        fill: opts.fillDark, stroke: '#1a0820', 'stroke-width': 1.5,
+      }, tg);
+      // Suckers along the inside curve
+      const suckers = [
+        [-8, -20], [-10, -50], [-8, -80], [-2, -110],
+        [6, -138], [16, -160], [28, -180],
+      ];
+      for (const [sx, sy] of suckers) {
+        el('circle', { cx: sx, cy: sy, r: 2.6, fill: opts.fillLight, opacity: 0.85 }, tg);
+        el('circle', { cx: sx, cy: sy, r: 1.0, fill: '#1a0820' }, tg);
+      }
+      return tg;
+    }
+
+    // Front tentacle — rendered in foreground so it can rise OVER the ship.
+    const slapper = makeTentacle(fg, {
+      rootX: baseX, rootY: baseY + 200,
+      baseAngle: 0, scale: 1.0,
+      fillDark: '#3a1a4a', fillLight: '#9f5fb8',
     });
-    // Sway
+    // Side tentacles in water layer (slightly behind, smaller for depth).
+    const tLeft = makeTentacle(w, {
+      rootX: baseX, rootY: baseY + 200,
+      baseAngle: -28, scale: 0.85,
+      fillDark: '#2e1238', fillLight: '#7a3a8a',
+    });
+    const tRight = makeTentacle(w, {
+      rootX: baseX, rootY: baseY + 200,
+      baseAngle: 28, scale: 0.85,
+      fillDark: '#2e1238', fillLight: '#7a3a8a',
+    });
+
+    // ---- Rise: head surfaces, tentacles emerge ----
+    const headRiseY = baseY - 30;
     await tween({
-      from: 0, to: 18, duration: 350, easing: 'easeInOutSine',
-      onUpdate: (a) => g.setAttribute('transform', `translate(${baseX},${riseToY}) rotate(${a})`),
+      from: 0, to: 1, duration: 1400, easing: 'easeOutQuad',
+      onUpdate: (t) => {
+        body.setAttribute('opacity', String(t));
+        const bodyY = (baseY + 120) + (headRiseY - (baseY + 120)) * t;
+        body.setAttribute('transform', `translate(${baseX},${bodyY})`);
+        const rootY = baseY + 200 - 200 * t;
+        slapper.setAttribute('transform', `translate(${baseX},${rootY}) rotate(0) scale(1)`);
+        tLeft.setAttribute('transform', `translate(${baseX - 20},${rootY + 10}) rotate(-28) scale(0.85)`);
+        tRight.setAttribute('transform', `translate(${baseX + 20},${rootY + 10}) rotate(28) scale(0.85)`);
+      },
+    });
+
+    // Sway side tentacles continuously
+    let swayActive = true;
+    (async () => {
+      let phase = 0;
+      while (swayActive) {
+        phase += 0.18;
+        const lA = -28 + Math.sin(phase) * 8;
+        const rA = 28 + Math.sin(phase + Math.PI) * 8;
+        tLeft.setAttribute('transform', `translate(${baseX - 20},${baseY + 10}) rotate(${lA}) scale(0.85)`);
+        tRight.setAttribute('transform', `translate(${baseX + 20},${baseY + 10}) rotate(${rA}) scale(0.85)`);
+        await sleep(60);
+      }
+    })();
+
+    // ---- Slap: front tentacle winds back, then snaps onto the container ----
+    await tween({
+      from: 0, to: -28, duration: 380, easing: 'easeInOutSine',
+      onUpdate: (a) => slapper.setAttribute('transform', `translate(${baseX},${baseY}) rotate(${a}) scale(1)`),
     });
     await tween({
-      from: 18, to: -22, duration: 500, easing: 'easeInOutSine',
-      onUpdate: (a) => g.setAttribute('transform', `translate(${baseX},${riseToY}) rotate(${a})`),
+      from: -28, to: 14, duration: 220, easing: 'easeInQuad',
+      onUpdate: (a) => slapper.setAttribute('transform', `translate(${baseX},${baseY}) rotate(${a}) scale(1)`),
     });
-    // SLAP — snap toward target
-    await tween({
-      from: -22, to: 5, duration: 220, easing: 'easeInQuad',
-      onUpdate: (a) => g.setAttribute('transform', `translate(${baseX},${riseToY}) rotate(${a})`),
-    });
-    // Impact: kill + huge splash
+
+    // Impact
     emitFlash(pos.x, pos.y, 60);
     emitSplash(pos.x, pos.y, 28);
     emitDebris(pos.x, pos.y, '120,80,180', 18);
     killPod(idx);
-    // Drag it back down
-    await sleep(400);
+
+    // Hold the wrap a beat
+    await sleep(500);
+    swayActive = false;
+
+    // ---- Submerge: everything sinks back ----
     await tween({
-      from: riseToY, to: baseY + 240, duration: 1100, easing: 'easeInQuad',
-      onUpdate: (y) => g.setAttribute('transform', `translate(${baseX},${y})`),
+      from: 0, to: 1, duration: 1100, easing: 'easeInQuad',
+      onUpdate: (t) => {
+        body.setAttribute('opacity', String(1 - t));
+        const bodyY = headRiseY + 140 * t;
+        body.setAttribute('transform', `translate(${baseX},${bodyY})`);
+        const rootY = baseY + 200 * t;
+        slapper.setAttribute('transform', `translate(${baseX},${rootY}) rotate(${14 - 14 * t}) scale(1)`);
+        tLeft.setAttribute('transform', `translate(${baseX - 20},${rootY + 10}) rotate(-28) scale(0.85)`);
+        tRight.setAttribute('transform', `translate(${baseX + 20},${rootY + 10}) rotate(28) scale(0.85)`);
+      },
     });
     emitSplash(baseX, baseY, 24);
-    g.remove();
+    body.remove();
+    slapper.remove();
+    tLeft.remove();
+    tRight.remove();
   },
 });
 
@@ -295,7 +383,6 @@ register({
   name: 'meteor',
   category: 'cameo',
   weight: 1,
-  nightOnly: true,
   async run() {
     const fromLeft = Math.random() < 0.5;
     const x0 = fromLeft ? rand(-40, 200) : rand(1080, 1320);
@@ -303,15 +390,42 @@ register({
     const x1 = fromLeft ? rand(900, 1300) : rand(-20, 380);
     const y1 = rand(420, 560);  // disappears past horizon
     const dur = 1100;
+
+    // Visible head + glowing tail. Drawn in the night-additive layer so the
+    // night overlay doesn't dim it; in day mode the foreground layer is also
+    // fine, so fall back if the additive layer isn't present.
+    const fg = layer('layer-night-additive') || layer('layer-foreground');
+    const angle = Math.atan2(y1 - y0, x1 - x0) * 180 / Math.PI;
+    const head = el('g', {
+      class: 'theatre-meteor',
+      transform: `translate(${x0},${y0}) rotate(${angle})`,
+    }, fg);
+    // Glowing tail (long ellipse extending behind the head, i.e. negative x).
+    el('ellipse', {
+      cx: -36, cy: 0, rx: 36, ry: 3,
+      fill: '#fff7c0', opacity: 0.95,
+      filter: 'drop-shadow(0 0 8px #ffd060) drop-shadow(0 0 18px #ff8a30)',
+    }, head);
+    // Bright head
+    el('circle', {
+      cx: 0, cy: 0, r: 5,
+      fill: '#ffffff',
+      filter: 'drop-shadow(0 0 10px #ffe080) drop-shadow(0 0 22px #ff8a30)',
+    }, head);
+
     const t0 = performance.now();
-    emitFlash(x0, y0, 30);
+    emitFlash(x0, y0, 40);
     while (performance.now() - t0 < dur) {
       const t = (performance.now() - t0) / dur;
       const x = x0 + (x1 - x0) * t;
       const y = y0 + (y1 - y0) * t;
-      emitEmbers(x, y, 4);
+      head.setAttribute('transform', `translate(${x},${y}) rotate(${angle})`);
+      emitEmbers(x, y, 5);
       await sleep(28);
     }
+    // Burnout flash where it goes past the horizon
+    emitFlash(x1, y1, 50);
+    head.remove();
   },
 });
 
