@@ -307,8 +307,13 @@ def create_app():
             event_subscribers.append(q)
             try:
                 while True:
-                    payload = q.get()
-                    yield f"data: {json.dumps(payload)}\n\n"
+                    try:
+                        payload = q.get(timeout=15)
+                        yield f"data: {json.dumps(payload)}\n\n"
+                    except gevent.queue.Empty:
+                        # Heartbeat keeps proxies from idle-closing the connection
+                        # and surfaces dead sockets so the finally block can clean up.
+                        yield ": keepalive\n\n"
             finally:
                 try:
                     event_subscribers.remove(q)
@@ -323,11 +328,18 @@ def create_app():
         # gevent monkey-patches time.sleep so this is cooperative.
         def watch_mode():
             last = None
+            ticks = 0
             while True:
                 current = display_mode["value"]
                 if current != last:
                     last = current
+                    ticks = 0
                     yield f'data: {{"mode": "{current}"}}\n\n'
+                else:
+                    ticks += 1
+                    if ticks >= 15:
+                        ticks = 0
+                        yield ": keepalive\n\n"
                 time.sleep(1)
 
         return Response(watch_mode(), content_type="text/event-stream")
