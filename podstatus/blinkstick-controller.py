@@ -28,18 +28,42 @@ except (ConfigException, ValueError) as e:
     logging.fatal(e)
     exit(1)
 
-# Blinkstick setup
+led_per_pod = config.BLINKSTICK_GROUP_LED
+bstick = None
+
+
+def connect_blinkstick():
+    stick = blinkstick.find_first()
+    if not stick:
+        return None
+    stick.set_led_count(config.BLINKSTICK_TOTAL_LED)
+    logging.info(
+        f"BlinkStick connected: {stick.get_description()} - {stick.get_serial()}"
+    )
+    return stick
+
+
+def reconnect_blinkstick():
+    global bstick
+    bstick = None
+    delay = 2
+    while bstick is None:
+        try:
+            bstick = connect_blinkstick()
+        except Exception as e:
+            logging.error(f"BlinkStick reconnect failed: {e}")
+            bstick = None
+        if bstick is None:
+            logging.error(f"No BlinkStick found, retrying in {delay}s")
+            time.sleep(delay)
+            delay = min(delay * 2, 30)
+
+
 try:
-    bstick = blinkstick.find_first()
+    bstick = connect_blinkstick()
     if not bstick:
         logging.fatal("No BlinkStick found")
         exit(1)
-    else:
-        logging.info(
-            f"BlinkStick found: {bstick.get_description()} - {bstick.get_serial()}"
-        )
-        bstick.set_led_count(config.BLINKSTICK_TOTAL_LED)
-        led_per_pod = config.BLINKSTICK_GROUP_LED
 except (NoBackendError, USBError) as e:
     logging.fatal(f"BlinkStick setup failed: {e}")
     exit(1)
@@ -48,9 +72,13 @@ except (NoBackendError, USBError) as e:
 # Ensure Blinkstick is turned off on exit
 def turn_off_blinkstick(signum=None, frame=None):
     logging.info("Turning off BlinkStick")
-    for i in range(config.BLINKSTICK_TOTAL_LED):
-        bstick.set_color(channel=0, index=i, hex="#000000")
-        time.sleep(0.1)
+    if bstick is not None:
+        try:
+            for i in range(config.BLINKSTICK_TOTAL_LED):
+                bstick.set_color(channel=0, index=i, hex="#000000")
+                time.sleep(0.1)
+        except Exception as e:
+            logging.warning(f"Failed to turn off BlinkStick cleanly: {e}")
 
     logging.info("BlinkStick controller stopped")
     sys.exit(0)
@@ -64,6 +92,8 @@ signal.signal(signal.SIGHUP, turn_off_blinkstick)
 
 
 def set_led_color(pod_index, color):
+    if bstick is None:
+        return
     start_led = pod_index * led_per_pod
     for i in range(start_led, start_led + led_per_pod):
         logging.debug(f"Setting color of LED {i} to {color}")
@@ -116,6 +146,10 @@ def watch_pods():
         except Exception as e:
             logging.error(f"Error watching pods, reconnecting in 2s: {e}")
             time.sleep(2)
+            # USB errors invalidate the bstick handle; re-acquire before
+            # restarting the watch so subsequent set_color calls succeed.
+            if isinstance(e, (NoBackendError, USBError)) or "BlinkStick" in str(e):
+                reconnect_blinkstick()
 
 
 if __name__ == "__main__":
