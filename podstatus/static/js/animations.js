@@ -529,9 +529,15 @@ function playFullSink(name) {
   });
 }
 
-let killCount = 0;
-function bumpKillCounter() {
-  killCount += 1;
+// Seeded from whatever the server rendered into the DOM, so an operator-set
+// starting value survives kiosk reloads.
+let killCount = (() => {
+  const node = document.querySelector('#kill-counter .kc-value');
+  const n = node ? parseInt(node.textContent, 10) : 0;
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+})();
+
+function renderKillCount() {
   const el = document.getElementById('kill-counter');
   if (!el) return;
   el.querySelector('.kc-value').textContent = String(killCount);
@@ -539,6 +545,19 @@ function bumpKillCounter() {
   // Force reflow so the animation can replay
   void el.offsetWidth;
   el.classList.add('bumped');
+}
+
+function bumpKillCounter() {
+  killCount += 1;
+  renderKillCount();
+}
+
+// Operator-driven seed update from /control/kill-count via SSE.
+export function setKillCount(n) {
+  const v = Math.max(0, Math.floor(Number(n)));
+  if (!Number.isFinite(v)) return;
+  killCount = v;
+  renderKillCount();
 }
 
 export function init() {

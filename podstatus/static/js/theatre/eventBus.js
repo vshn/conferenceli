@@ -7,6 +7,7 @@
 
 import { THEATRE_CONFIG } from './config.js';
 import * as state from '../state.js';
+import { setKillCount } from '../animations.js';
 
 const registry = new Map();  // name -> def
 const lastFiredAt = new Map();  // name -> ms timestamp
@@ -161,6 +162,12 @@ function subscribeManualEvents() {
   es.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data);
+      // kill-count is a state update from control, not a theatre event - the
+      // kiosk just sets its counter and continues.
+      if (data.event === 'kill-count' && typeof data.value === 'number') {
+        setKillCount(data.value);
+        return;
+      }
       if (data.event) fire(data.event);
     } catch (err) {
       console.error('[theatre] stream_events parse', err, e.data);

@@ -37,13 +37,18 @@ stop_event = threading.Event()
 # In-memory display mode (no persistence; resets to 'day' on app restart)
 display_mode = {"value": "day"}
 
+# Operator-configured starting value for the kiosk's "pods destroyed" counter.
+# The kiosk's local counter is seeded from this value on initial render and
+# whenever the operator pushes a new value via /control/kill-count.
+kill_count_seed = {"value": 0}
+
 # Subscribers for the manual theatre-event SSE channel. Each open client gets
 # its own gevent.queue.Queue; broadcast_event fans out to all of them.
 event_subscribers = []
 
 
-def broadcast_event(name):
-    payload = {"event": name}
+def broadcast_event(name, **extras):
+    payload = {"event": name, **extras}
     for q in list(event_subscribers):
         try:
             q.put_nowait(payload)
@@ -173,7 +178,7 @@ def create_app():
     # Define routes
     @app.route("/")
     def index():
-        return render_template("index.html")
+        return render_template("index.html", kill_count_seed=kill_count_seed["value"])
 
     @app.route("/chaos")
     @requires_auth
@@ -297,6 +302,21 @@ def create_app():
         broadcast_event(event_name)
         logging.info(f"Theatre event triggered: {event_name}")
         return jsonify({"message": f"Event {event_name} fired"}), 200
+
+    @app.route("/control/kill-count", methods=["POST"])
+    @requires_control_session
+    def control_kill_count():
+        data = request.get_json(silent=True) or request.form
+        try:
+            n = int(data.get("value", 0))
+        except (TypeError, ValueError):
+            return jsonify({"message": "Invalid value"}), 400
+        if n < 0:
+            n = 0
+        kill_count_seed["value"] = n
+        broadcast_event("kill-count", value=n)
+        logging.info(f"Kill count seeded to {n}")
+        return jsonify({"message": f"Kill count set to {n}"}), 200
 
     @app.route("/stream_events")
     def stream_events():

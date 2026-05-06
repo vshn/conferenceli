@@ -19,7 +19,7 @@
       <div id="qr-card"></div>
       <div id="kill-counter">
         <span class="kc-label">💥 Pods destroyed:</span>
-        <span class="kc-value">0</span>
+        <span class="kc-value">{{ kill_count_seed | default(0) }}</span>
       </div>
     </div>
   </div>

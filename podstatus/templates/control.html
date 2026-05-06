@@ -41,7 +41,8 @@
             text-align: center;
             letter-spacing: 0.02em;
         }
-        input[type="password"] {
+        input[type="password"],
+        input[type="number"] {
             width: 100%;
             padding: 0.9rem 1rem;
             font-size: 1rem;
@@ -53,10 +54,26 @@
             -webkit-appearance: none;
             appearance: none;
         }
-        input[type="password"]:focus {
+        input[type="password"]:focus,
+        input[type="number"]:focus {
             outline: none;
             border-color: #1f6feb;
             box-shadow: 0 0 0 3px rgba(31,111,235,0.3);
+        }
+        .kc-form {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+        .kc-form input[type="number"] {
+            margin-bottom: 0;
+        }
+        .kc-form button {
+            margin-bottom: 0;
+            width: auto;
+            padding: 0 1.1rem;
+            white-space: nowrap;
         }
         button {
             width: 100%;
@@ -153,6 +170,12 @@
             <button class="btn-chaos" onclick="trigger('chaos', this)">Trigger Chaos</button>
             <button class="btn-night" onclick="trigger('nightmode', this)">Toggle Night Mode</button>
 
+            <div class="section-label">Pods destroyed counter</div>
+            <form class="kc-form" onsubmit="event.preventDefault(); setKillCount(this.querySelector('button'));">
+                <input type="number" id="kc-input" min="0" step="1" value="0" inputmode="numeric">
+                <button type="submit" class="btn-primary">Set</button>
+            </form>
+
             <div class="section-label">Theatre — Signature</div>
             <div class="theatre-grid">
                 <button class="has-kill" onclick="fireEvent('lightning-strike', this)">⚡ Lightning</button>
@@ -218,6 +241,36 @@
                 status.textContent = 'Error: ' + e.message;
             } finally {
                 buttons.forEach(b => b.disabled = false);
+            }
+        }
+
+        async function setKillCount(btn) {
+            const status = document.getElementById('status');
+            const input = document.getElementById('kc-input');
+            const value = parseInt(input.value, 10);
+            if (!Number.isFinite(value) || value < 0) {
+                status.className = 'status err';
+                status.textContent = 'Enter a non-negative number';
+                return;
+            }
+            btn.disabled = true;
+            status.className = 'status';
+            status.textContent = 'Setting...';
+            try {
+                const res = await fetch('/control/kill-count', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ value }),
+                });
+                if (res.status === 401) { window.location.reload(); return; }
+                const data = await res.json();
+                status.className = 'status ' + (res.ok ? 'ok' : 'err');
+                status.textContent = data.message || 'Done';
+            } catch (e) {
+                status.className = 'status err';
+                status.textContent = 'Error: ' + e.message;
+            } finally {
+                btn.disabled = false;
             }
         }
 
