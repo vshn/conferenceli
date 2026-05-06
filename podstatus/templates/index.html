@@ -18,7 +18,12 @@
       <div id="vshn-logo"></div>
       <div id="qr-card"></div>
       <div id="kill-counter">
-        <span class="kc-label">💥 Pods destroyed:</span>
+        <svg class="kc-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 1.5 L13.8 7.6 L19.5 4.7 L17.1 10.6 L23 11.4 L17.4 13.5 L20.5 19.1 L14.7 16.6 L13.6 22.5 L12 17.2 L10.4 22.5 L9.3 16.6 L3.5 19.1 L6.6 13.5 L1 11.4 L6.9 10.6 L4.5 4.7 L10.2 7.6 Z"
+                fill="#ff7a3a" stroke="#a02410" stroke-width="1" stroke-linejoin="round"/>
+          <circle cx="12" cy="12" r="3" fill="#fff5cc"/>
+        </svg>
+        <span class="kc-label">Pods destroyed:</span>
         <span class="kc-value">{{ kill_count_seed | default(0) }}</span>
       </div>
     </div>
