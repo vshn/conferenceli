@@ -13,6 +13,12 @@
       "description": "Automerge dev tool updates",
       "matchPackageNames": ["black", "ruff"],
       "automerge": true
+    },
+    {
+      "description": "Automerge gunicorn patch and minor updates",
+      "matchPackageNames": ["gunicorn"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
     }
   ]
 }
