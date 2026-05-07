@@ -36,11 +36,11 @@ spec:
               mountPath: /opt/data
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
           resources: {}
       volumes:

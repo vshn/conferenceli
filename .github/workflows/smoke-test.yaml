@@ -1,0 +1,154 @@
+name: Smoke Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  podstatus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.podstatus
+          platforms: linux/amd64
+          load: true
+          tags: podstatus:test
+
+      - name: Create dummy kubeconfig
+        run: |
+          mkdir -p /tmp/kube
+          printf '%s\n' \
+            'apiVersion: v1' \
+            'kind: Config' \
+            'clusters:' \
+            '- cluster:' \
+            '    server: https://localhost:6443' \
+            '  name: dummy' \
+            'contexts:' \
+            '- context:' \
+            '    cluster: dummy' \
+            '    user: dummy' \
+            '  name: dummy' \
+            'current-context: dummy' \
+            'users:' \
+            '- name: dummy' \
+            '  user: {}' \
+            > /tmp/kube/config
+
+      - name: Run container
+        run: |
+          docker run -d --name podstatus \
+            -e FLASK_APP_SECRET_KEY=test \
+            -e K8S_NAMESPACE=default \
+            -e CHAOS_BASIC_AUTH_USERNAME=test \
+            -e CHAOS_BASIC_AUTH_PASSWORD=test \
+            -e KUBECONFIG=/tmp/kube/config \
+            -v /tmp/kube:/tmp/kube:ro \
+            -p 8080:8080 \
+            podstatus:test
+
+      - name: Wait for healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/healthz; then
+              echo " Smoke test passed"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Smoke test failed"
+          docker logs podstatus
+          exit 1
+
+  contactform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.contactform
+          platforms: linux/amd64
+          load: true
+          tags: contactform:test
+
+      - name: Run container
+        run: |
+          docker run -d --name contactform \
+            -e FLASK_APP_SECRET_KEY=test \
+            -e PRINTER_IP=0.0.0.0 \
+            -e ODOO_URL=http://localhost \
+            -e ODOO_DB=test \
+            -e ODOO_USERNAME=test \
+            -e ODOO_PASSWORD=test \
+            -e TAG_NAME=test \
+            -e CAMPAIGN_NAME=test \
+            -e SOURCE_NAME=test \
+            -e CSV_FILE_PATH=/tmp/test.csv \
+            -e BASIC_AUTH_USERNAME=test \
+            -e BASIC_AUTH_PASSWORD=test \
+            -p 8080:8080 \
+            contactform:test
+
+      - name: Wait for healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/healthz; then
+              echo " Smoke test passed"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Smoke test failed"
+          docker logs contactform
+          exit 1
+
+  demopod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.demopod
+          platforms: linux/amd64
+          load: true
+          tags: demopod:test
+
+      - name: Run container
+        run: |
+          docker run -d --name demopod \
+            -p 8080:8080 \
+            demopod:test
+
+      - name: Wait for healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health; then
+              echo " Smoke test passed"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Smoke test failed"
+          docker logs demopod
+          exit 1

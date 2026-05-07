@@ -1,4 +1,5 @@
 import logging
+import time
 import threading
 from flask import (
     Flask,
@@ -37,15 +38,36 @@ app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "sandstone"
 app.config["BOOTSTRAP_BTN_SIZE"] = "lg"
 app.config["BOOTSTRAP_SERVE_LOCAL"] = True
 
-# Initialize Odoo client and look up campaign and source IDs
-odoo_client = OdooClient(
-    config.ODOO_URL, config.ODOO_DB, config.ODOO_USERNAME, config.ODOO_PASSWORD
-)
-try:
-    config.lookup_ids(odoo_client)
-except ValueError as e:
-    logging.error(e)
-    exit(1)
+# Odoo client — initialized in a background thread so the app starts
+# immediately (healthz works, k8s probes pass) and the data is usually
+# ready by the time a visitor reaches the form.
+_odoo_client = None
+_odoo_countries = None
+_odoo_ready = threading.Event()
+
+
+def _init_odoo():
+    global _odoo_client, _odoo_countries
+    delay = 1
+    max_delay = 900  # 15 minutes
+    while True:
+        try:
+            _odoo_client = OdooClient(
+                config.ODOO_URL, config.ODOO_DB, config.ODOO_USERNAME, config.ODOO_PASSWORD
+            )
+            config.lookup_ids(_odoo_client)
+            _odoo_countries = load_countries(_odoo_client)
+            logging.info("Odoo initialization complete")
+            break
+        except Exception as e:
+            logging.error(f"Odoo initialization failed: {e}, retrying in {delay}s")
+            _odoo_client = None
+            time.sleep(delay)
+            delay = min(delay * 2, max_delay)
+    _odoo_ready.set()
+
+
+threading.Thread(target=_init_odoo, daemon=True).start()
 
 # Configure printer
 printer_config = Configuration(
@@ -67,7 +89,7 @@ class LeadForm(FlaskForm):
     company = StringField("Company")
     job_position = StringField("Job Position")
     phone = TelField()
-    country = SelectField("Country", choices=load_countries(odoo_client))
+    country = SelectField("Country", choices=[])
     notes = TextAreaField("What can VSHN help you with?", render_kw={"rows": 5})
     submit = SubmitField()
 
@@ -99,9 +121,20 @@ def is_duplicate_submission(email, csv_file_path):
     return False
 
 
+@app.route("/healthz")
+def healthz():
+    return "ok"
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
+    if not _odoo_ready.is_set():
+        _odoo_ready.wait()
+    if _odoo_client is None:
+        _init_odoo()
+
     form = LeadForm()
+    form.country.choices = _odoo_countries or []
 
     if form.validate_on_submit():
         # Check if the form submission is a duplicate
@@ -140,7 +173,7 @@ def index():
             )
             # Create lead in Odoo
             try:
-                lead_id = odoo_client.create(
+                lead_id = _odoo_client.create(
                     "crm.lead",
                     {
                         "name": f"Event Lead: {form.name.data}",
@@ -221,7 +254,7 @@ def config_endpoint():
 
     if form.validate_on_submit():
         try:
-            config.CAMPAIGN_ID = odoo_client.find_id_by_name(
+            config.CAMPAIGN_ID = _odoo_client.find_id_by_name(
                 "utm.campaign", form.campaign_name.data
             )
             config.CAMPAIGN_NAME = form.campaign_name.data

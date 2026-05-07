@@ -175,7 +175,10 @@ def create_app():
         logging.info(f"Display mode toggled to {display_mode['value']}")
         return jsonify({"mode": display_mode["value"]})
 
-    # Define routes
+    @app.route("/healthz")
+    def healthz():
+        return "ok"
+
     @app.route("/")
     def index():
         return render_template("index.html", kill_count_seed=kill_count_seed["value"])
