@@ -1,5 +1,8 @@
+import hashlib
 import logging
 import threading
+from urllib.parse import urlencode
+
 from flask import (
     Flask,
     render_template,
@@ -202,7 +205,18 @@ def index():
         else:
             flash("Thanks for submitting", "success")
 
-        return render_template("success.html")
+        # Redirect to go.vshn.ch for retargeting pixel firing
+        email_hash = hashlib.sha256(
+            email_data.lower().strip().encode()
+        ).hexdigest()
+        params = urlencode({
+            "event": "1",
+            "e": email_hash,
+            "utm_source": "event",
+            "utm_medium": "booth",
+            "utm_campaign": config.CAMPAIGN_NAME,
+        })
+        return redirect(f"https://go.vshn.ch/?{params}")
     else:
         return render_template("form.html", form=form)
 
