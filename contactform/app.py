@@ -146,6 +146,9 @@ def index():
                 lead_id = odoo_client.create(
                     "crm.lead",
                     {
+                        # Odoo defaults this per-user (based on crm.group_use_leads),
+                        # so set it explicitly to not depend on the API user's groups
+                        "type": "lead",
                         "name": f"Event Lead: {form.name.data}",
                         "contact_name": form.name.data,
                         "email_from": form.email.data,
