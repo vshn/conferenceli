@@ -1,6 +1,8 @@
 :root {
   --stage-w: 1280px;
   --stage-h: 800px;
+  /* Set by fitStage() in main.js to fit the 1280x800 stage onto the actual screen */
+  --stage-scale: 1;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -13,6 +15,7 @@ html, body {
 #stage {
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;  /* clips the bleed bands when the stage overflows vertically */
 }
 #scene {
   position: relative;
@@ -20,6 +23,8 @@ html, body {
   height: var(--stage-h);
   background: linear-gradient(to bottom, #87ceeb 0%, #cfe9f5 60%, #b8d8e8 100%);
   overflow: hidden;
+  transform: scale(var(--stage-scale));
+  transform-origin: center;
 }
 #scene .layer,
 #scene #layer-fx,
@@ -37,9 +42,11 @@ html, body {
 #layer-fx-bright { z-index: 58; }
 #layer-chrome { z-index: 60; }
 
+/* Chrome sits below y=48: the top bleed band is cropped on 16:9 displays
+   (see SAFE_H in main.js), and the logo / QR / counter must never be cut. */
 #vshn-logo {
   position: absolute;
-  top: 22px; left: 24px;
+  top: 56px; left: 24px;
   width: 260px; height: 90px;
   background: rgba(255,255,255,0.85);
   border-radius: 10px;
@@ -52,7 +59,7 @@ html, body {
 
 #qr-card {
   position: absolute;
-  top: 22px; right: 24px;
+  top: 56px; right: 24px;
   width: 160px;
   background: rgba(255,255,255,0.92);
   border-radius: 8px;
@@ -76,7 +83,7 @@ html, body {
 /* Kill counter — easter egg, session-only */
 #kill-counter {
   position: absolute;
-  top: 36px; left: 50%;
+  top: 64px; left: 50%;
   transform: translateX(-50%);
   background: rgba(255,255,255,0.85);
   border-radius: 999px;
@@ -119,9 +126,9 @@ html, body {
 #cloud-2 { animation: drift2 95s linear infinite; }
 #cloud-3 { animation: drift3 130s linear infinite; }
 @keyframes drift0 { from { transform: translate(180px, 110px) scale(1.0); } to { transform: translate(1380px, 110px) scale(1.0); } }
-@keyframes drift1 { from { transform: translate(520px,  80px) scale(0.7); } to { transform: translate(1380px,  80px) scale(0.7); } }
+@keyframes drift1 { from { transform: translate(520px,  88px) scale(0.7); } to { transform: translate(1380px,  88px) scale(0.7); } }
 @keyframes drift2 { from { transform: translate(880px, 160px) scale(1.2); } to { transform: translate(1380px, 160px) scale(1.2); } }
-@keyframes drift3 { from { transform: translate(1180px, 60px) scale(0.6); } to { transform: translate(-200px,  60px) scale(0.6); } }
+@keyframes drift3 { from { transform: translate(1180px, 76px) scale(0.6); } to { transform: translate(-200px,  76px) scale(0.6); } }
 
 /* === Idle ambiance: water waves === */
 .wave { will-change: transform; }
@@ -366,10 +373,4 @@ html, body {
   50%     { opacity: 0.35; }
 }
 
-/* Auto-fit non-1280x800 displays */
-@media (max-aspect-ratio: 1280/800), (min-aspect-ratio: 1280/800) {
-  #scene {
-    transform: scale(min(100vw / 1280, 100vh / 800));
-    transform-origin: center;
-  }
-}
+/* Auto-fit of non-1280x800 displays happens via --stage-scale (see :root and main.js) */

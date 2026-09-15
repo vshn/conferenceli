@@ -386,7 +386,7 @@ register({
   async run() {
     const fromLeft = Math.random() < 0.5;
     const x0 = fromLeft ? rand(-40, 200) : rand(1080, 1320);
-    const y0 = rand(40, 120);
+    const y0 = rand(56, 120);  // below the cropped top bleed band
     const x1 = fromLeft ? rand(900, 1300) : rand(-20, 380);
     const y1 = rand(420, 560);  // disappears past horizon
     const dur = 1100;

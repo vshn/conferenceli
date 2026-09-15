@@ -1,6 +1,11 @@
 // Canvas particle pool + RAF loop for explosions, smoke, splashes.
 
 const MAX_PARTICLES = 600;
+// Emitters all work in 1280x800 stage coordinates. The canvas backing store is
+// sized to the on-screen pixel count instead and the scale is baked into the
+// context transform, so particles stay sharp when the stage is scaled up.
+const WORLD_W = 1280;
+const WORLD_H = 800;
 let pool = [];
 let active = [];
 let canvas, ctx;
@@ -170,8 +175,8 @@ function step(dt) {
   updateQuality(dt);
   recurringEmitters.forEach(fn => fn(dt));
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  brightCtx.clearRect(0, 0, brightCanvas.width, brightCanvas.height);
+  ctx.clearRect(0, 0, WORLD_W, WORLD_H);
+  brightCtx.clearRect(0, 0, WORLD_W, WORLD_H);
   for (let i = active.length - 1; i >= 0; i--) {
     const p = active[i];
     p.age += dt;
@@ -243,6 +248,18 @@ function drawParticle(p) {
       c.fill();
       break;
     }
+  }
+}
+
+// Called by main.js whenever the stage scale changes. Resizing a canvas resets
+// its context, so the world transform has to be re-applied here every time.
+export function resize(stageScale) {
+  if (!ctx) return;
+  const s = Math.min(3, Math.max(1, stageScale)) * (window.devicePixelRatio || 1);
+  for (const [c, cx] of [[canvas, ctx], [brightCanvas, brightCtx]]) {
+    c.width = Math.round(WORLD_W * s);
+    c.height = Math.round(WORLD_H * s);
+    cx.setTransform(s, 0, 0, s, 0, 0);
   }
 }
 

@@ -23,6 +23,9 @@ class Config:
         self.CAMPAIGN_NAME = self.get_env_var("CAMPAIGN_NAME")
         self.SOURCE_NAME = self.get_env_var("SOURCE_NAME")
         self.CSV_FILE_PATH = self.get_env_var("CSV_FILE_PATH")
+        # Public Nextcloud share link with write access, empty disables the upload
+        self.NEXTCLOUD_SHARE_URL = self.get_env_var("NEXTCLOUD_SHARE_URL", "")
+        self.NEXTCLOUD_SHARE_PASSWORD = self.get_env_var("NEXTCLOUD_SHARE_PASSWORD", "")
         self.LABEL_HEADER = self.get_env_var("LABEL_HEADER", "Welcome")
         self.VOUCHER_TYPE = self.get_env_var("VOUCHER_TYPE", "appuio").lower()
         self.SERVALA_VOUCHER_CODE = self.get_env_var("SERVALA_VOUCHER_CODE", "")

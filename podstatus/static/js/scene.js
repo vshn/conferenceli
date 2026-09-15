@@ -25,7 +25,9 @@ function buildSky() {
     </radialGradient>
   `;
   // Sun (visible in day mode, in the sky layer underneath the overlay)
-  el('circle', { class: 'sun', cx: 220, cy: 180, r: 180, fill: 'url(#sunGlow)' }, sky);
+  // Sun/moon sit at the same spot, low enough that the moon's glow clears the
+  // bottom of the VSHN logo card (y 146).
+  el('circle', { class: 'sun', cx: 220, cy: 205, r: 180, fill: 'url(#sunGlow)' }, sky);
 
   // Moon, stars, and night-additive defs live ABOVE the night-overlay so they
   // shine through the dimming.
@@ -37,7 +39,7 @@ function buildSky() {
       <stop offset="100%" stop-color="#bcb89d" stop-opacity="0"/>
     </radialGradient>
   `;
-  const moon = el('g', { class: 'moon', transform: 'translate(220, 180)' }, nightLayer);
+  const moon = el('g', { class: 'moon', transform: 'translate(220, 205)' }, nightLayer);
   el('circle', { cx: 0, cy: 0, r: 90, fill: 'url(#moonGlow)' }, moon);
   el('circle', { cx: 0, cy: 0, r: 36, fill: '#f1eedb' }, moon);
   // Moon craters
@@ -45,10 +47,14 @@ function buildSky() {
   el('circle', { cx:  12, cy:   4, r: 3, fill: '#cfcab0', opacity: 0.6 }, moon);
   el('circle', { cx:  -4, cy:  12, r: 3, fill: '#cfcab0', opacity: 0.6 }, moon);
 
-  // Stars — small twinkling dots scattered across the upper sky (night-only)
+  // Stars — small twinkling dots scattered across the upper sky (night-only).
+  // Kept at y >= 56 to clear the cropped top bleed on 16:9, and routed around
+  // the chrome boxes that would otherwise hide them: the logo (x 24-284,
+  // y 56-146), the kill counter (x ~520-760, y 64-106) and the QR card
+  // (x 1096-1256, y 56-236).
   const starPositions = [
-    [120,  60], [410,  40], [560,  90], [720,  50], [860, 30], [1040, 70],
-    [1170, 130], [330, 130], [480, 150], [640, 120], [970, 150], [1140, 30],
+    [170, 200], [410,  58], [530, 200], [760, 175], [860,  56], [990, 105],
+    [330, 130], [480, 150], [640, 120], [900, 150], [1050, 210], [1010, 260],
   ];
   starPositions.forEach(([cx, cy], i) => {
     el('circle', {
@@ -59,12 +65,14 @@ function buildSky() {
     }, nightLayer);
   });
 
-  // Clouds — 4 puffy ellipsoid clusters at different scales/Y
+  // Clouds — 4 puffy ellipsoid clusters at different scales/Y. Keep them low
+  // enough that the puffs clear the cropped top bleed (drift keyframes in
+  // styles.css carry the same y values and must be kept in sync).
   const clouds = [
     { x: 180,  y: 110, scale: 1.0, opacity: 0.85 },
-    { x: 520,  y: 80,  scale: 0.7, opacity: 0.75 },
+    { x: 520,  y: 88,  scale: 0.7, opacity: 0.75 },
     { x: 880,  y: 160, scale: 1.2, opacity: 0.90 },
-    { x: 1180, y: 60,  scale: 0.6, opacity: 0.70 },
+    { x: 1180, y: 76,  scale: 0.6, opacity: 0.70 },
   ];
   clouds.forEach((c, i) => {
     const g = el('g', {
@@ -115,9 +123,12 @@ function buildLighthouse() {
   // Kubernetes flag flying above the lighthouse — the K8s logo is a ship's
   // helm, so it fits the nautical theme: this lighthouse guides the pod-ships
   // home under the Kubernetes flag.
-  el('rect', { x: -1, y: -130, width: 2, height: 117, fill: '#7a7a7a' }, g);
-  el('circle', { cx: 0, cy: -133, r: 3.2, fill: '#bdbdbd' }, g);
-  const flagPivot = el('g', { transform: 'translate(1, -127)' }, g);
+  // Pole height is bounded by the QR card above it: the card hangs down to
+  // y~236 in scene coords, so the flag has to start below that (pivot -100 =>
+  // y 260). The pole's foot stays at -13, on the lamp room roof.
+  el('rect', { x: -1, y: -103, width: 2, height: 90, fill: '#7a7a7a' }, g);
+  el('circle', { cx: 0, cy: -106, r: 3.2, fill: '#bdbdbd' }, g);
+  const flagPivot = el('g', { transform: 'translate(1, -100)' }, g);
   const flag = el('g', { id: 'lighthouse-flag' }, flagPivot);
 
   // Sinusoidal traveling-wave path. Amplitude grows linearly from the pole
@@ -227,9 +238,10 @@ function buildWater() {
   // Base water rectangle
   el('rect', { x: 0, y: 720, width: 1280, height: 80, fill: '#2b6e8f' }, w);
 
-  // 3 wave layers (paths) for parallax — animation added later
+  // 3 wave layers (paths) for parallax — animation added later. Crests are
+  // kept above y=752 so all three stay visible once the bottom bleed is cropped.
   const waveColors = ['#4a8caa', '#3a7d9a', '#2b6e8f'];
-  [725, 745, 765].forEach((y, i) => {
+  [724, 738, 752].forEach((y, i) => {
     el('path', {
       class: `wave wave-${i}`,
       d: `M-200,${y} Q-100,${y-4} 0,${y} T200,${y} T400,${y} T600,${y} T800,${y} T1000,${y} T1200,${y} T1400,${y} T1600,${y} L1600,800 L-200,800 Z`,
@@ -243,7 +255,7 @@ function buildWater() {
   glintXs.forEach((cx, i) => {
     el('ellipse', {
       class: `water-glint glint-${i}`,
-      cx, cy: 740 + (i % 2 === 0 ? 0 : 14),
+      cx, cy: 736 + (i % 2 === 0 ? 0 : 12),
       rx: 4, ry: 1,
       fill: '#ffffff',
       opacity: 0,

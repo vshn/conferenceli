@@ -16,6 +16,7 @@ from flask_wtf import CSRFProtect, FlaskForm
 from flask_bootstrap import Bootstrap5
 from label_voucher import print_appuio_voucher, print_servala_voucher
 from label_raffle import print_raffle
+from nextcloud import upload_csv
 
 
 from brother_ql_web.configuration import (
@@ -134,6 +135,7 @@ def index():
             "VoucherCode": voucher_code,
         }
         append_to_csv(csv_data, config.CSV_FILE_PATH)
+        upload_csv(config.CSV_FILE_PATH, config.CAMPAIGN_NAME)
 
         if config.ODOO_CREATELEAD_ENABLED:
             voucher_label = (
@@ -209,16 +211,16 @@ def index():
             flash("Thanks for submitting", "success")
 
         # Redirect to go.vshn.ch for retargeting pixel firing
-        email_hash = hashlib.sha256(
-            email_data.lower().strip().encode()
-        ).hexdigest()
-        params = urlencode({
-            "event": "1",
-            "e": email_hash,
-            "utm_source": "event",
-            "utm_medium": "booth",
-            "utm_campaign": config.CAMPAIGN_NAME,
-        })
+        email_hash = hashlib.sha256(email_data.lower().strip().encode()).hexdigest()
+        params = urlencode(
+            {
+                "event": "1",
+                "e": email_hash,
+                "utm_source": "event",
+                "utm_medium": "booth",
+                "utm_campaign": config.CAMPAIGN_NAME,
+            }
+        )
         return redirect(f"https://go.vshn.ch/?{params}")
     else:
         return render_template("form.html", form=form)
