@@ -176,6 +176,45 @@
                 <button type="submit" class="btn-primary">Set</button>
             </form>
 
+            <div class="section-label">Director — time of day</div>
+            <div class="theatre-grid">
+                <button onclick="director({phase:'dawn'}, this)">🌅 Dawn</button>
+                <button onclick="director({phase:'morning'}, this)">🌤 Morning</button>
+                <button onclick="director({phase:'midday'}, this)">☀️ Midday</button>
+                <button onclick="director({phase:'afternoon'}, this)">🌥 Afternoon</button>
+                <button onclick="director({phase:'golden'}, this)">🌇 Golden hour</button>
+                <button onclick="director({phase:'dusk'}, this)">🌆 Dusk</button>
+                <button onclick="director({phase:'night'}, this)">🌙 Night</button>
+                <button onclick="director({phase:''}, this)">🕰 Back to clock</button>
+            </div>
+
+            <div class="section-label">Director — weather &amp; world</div>
+            <div class="theatre-grid">
+                <button onclick="director({weather:'clear'}, this)">☀️ Clear</button>
+                <button onclick="director({weather:'rain'}, this)">🌧 Rain</button>
+                <button onclick="director({weather:'snow'}, this)">❄️ Snow</button>
+                <button onclick="director({weather:'fog'}, this)">🌫 Fog</button>
+                <button onclick="director({weather:''}, this)">🎲 Seeded weather</button>
+                <button onclick="director({frozen:true}, this)">⏸ Freeze arc</button>
+                <button onclick="director({frozen:false}, this)">▶️ Resume arc</button>
+                <button class="has-kill" onclick="rerollHarbour(this)">🔄 Reroll harbour</button>
+            </div>
+
+            <div class="section-label">Theatre — Phase &amp; micro</div>
+            <div class="theatre-grid">
+                <button onclick="fireEvent('fishing-fleet', this)">🎣 Fishing fleet</button>
+                <button onclick="fireEvent('pilot-boat', this)">🚤 Pilot boat</button>
+                <button onclick="fireEvent('sun-dip', this)">🌇 Sun dip</button>
+                <button onclick="fireEvent('starling-murmuration', this)">🐦 Murmuration</button>
+                <button onclick="fireEvent('plankton-bloom', this)">🦠 Plankton</button>
+                <button onclick="fireEvent('searchlight-sweep', this)">🔦 Searchlight</button>
+                <button onclick="fireEvent('shooting-star', this)">💫 Shooting star</button>
+                <button onclick="fireEvent('aurora', this)">🌌 Aurora</button>
+                <button onclick="fireEvent('dock-worker', this)">👷 Dock worker</button>
+                <button onclick="fireEvent('forklift', this)">🚜 Forklift</button>
+                <button onclick="fireEvent('harbour-cat', this)">🐈 Harbour cat</button>
+            </div>
+
             <div class="section-label">Theatre — Signature</div>
             <div class="theatre-grid">
                 <button class="has-kill" onclick="fireEvent('lightning-strike', this)">⚡ Lightning</button>
@@ -272,6 +311,37 @@
             } finally {
                 btn.disabled = false;
             }
+        }
+
+        async function director(payload, btn) {
+            const status = document.getElementById('status');
+            btn.disabled = true;
+            status.className = 'status';
+            status.textContent = '🎬 Director...';
+            try {
+                const res = await fetch('/control/director', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (res.status === 401) { window.location.reload(); return; }
+                const data = await res.json();
+                status.className = 'status ' + (res.ok ? 'ok' : 'err');
+                status.textContent = data.message || 'Done';
+            } catch (e) {
+                status.className = 'status err';
+                status.textContent = 'Error: ' + e.message;
+            } finally {
+                setTimeout(() => { btn.disabled = false; }, 600);
+            }
+        }
+
+        // A reroll rebuilds the whole generated world, which throws away the
+        // harbour currently on screen — worth a confirm before doing it in
+        // front of a booth full of people.
+        async function rerollHarbour(btn) {
+            if (!confirm('Reroll the harbour? The kiosk will reload with a brand new world.')) return;
+            await director({ reroll: true }, btn);
         }
 
         async function fireEvent(name, btn) {

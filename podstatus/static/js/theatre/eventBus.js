@@ -7,6 +7,8 @@
 
 import { THEATRE_CONFIG } from './config.js';
 import * as state from '../state.js';
+import * as director from './director.js';
+import { world } from './seed.js';
 import { setKillCount } from '../animations.js';
 
 const registry = new Map();  // name -> def
@@ -40,11 +42,32 @@ function jitter(min, max) {
   return min + Math.random() * (max - min);
 }
 
+// dayOnly/nightOnly are resolved against the Director's arc rather than the
+// old binary mode, so an event marked nightOnly now also fires at dusk and
+// existing declarations keep working untouched.
 function isModeAllowed(def) {
-  const mode = state.mode.value;
-  if (def.dayOnly && mode !== 'day') return false;
-  if (def.nightOnly && mode !== 'night') return false;
+  const dark = director.isNightish();
+  if (def.dayOnly && dark) return false;
+  if (def.nightOnly && !dark) return false;
   return true;
+}
+
+// Phase-locked events declare which phases they belong to. A weight of 0 (or an
+// absent entry in a phaseWeights map) benches the event for that phase.
+function phaseWeight(def) {
+  if (!def.phaseWeights) return 1;
+  return def.phaseWeights[director.phase()] ?? 0;
+}
+
+// The seed benches part of the cameo pool for the whole conference and promotes
+// one survivor to headliner. This is what stops "I saw the kraken last year"
+// from being a guarantee.
+function deckWeight(def) {
+  if (def.category !== 'cameo') return 1;
+  const deck = world.deck;
+  if (!deck) return 1;
+  if (deck.benched.includes(def.name)) return 0;
+  return def.name === deck.headliner ? 2.5 : 1;
 }
 
 function isCooldownReady(def, now) {
@@ -64,16 +87,18 @@ function pickEvent(category, now) {
     if (def.category !== category) continue;
     if (!isModeAllowed(def)) continue;
     if (!isCooldownReady(def, now)) continue;
-    candidates.push(def);
+    const w = def.weight * phaseWeight(def) * deckWeight(def);
+    if (w <= 0) continue;
+    candidates.push({ def, w });
   }
   if (candidates.length === 0) return null;
-  const total = candidates.reduce((s, d) => s + d.weight, 0);
+  const total = candidates.reduce((s, c) => s + c.w, 0);
   let r = Math.random() * total;
-  for (const def of candidates) {
-    r -= def.weight;
-    if (r <= 0) return def;
+  for (const c of candidates) {
+    r -= c.w;
+    if (r <= 0) return c.def;
   }
-  return candidates[candidates.length - 1];
+  return candidates[candidates.length - 1].def;
 }
 
 async function runEvent(def) {
@@ -152,7 +177,9 @@ function startTimer(category) {
         await runEvent(def);
       }
     }
-    setTimeout(tick, jitter(cfg.minMs, cfg.maxMs));
+    // The Director stretches or compresses the gaps so dawn feels sparse and
+    // midday feels busy, without any event needing to know what time it is.
+    setTimeout(tick, jitter(cfg.minMs, cfg.maxMs) * director.timerScale());
   };
   setTimeout(tick, THEATRE_CONFIG.startupDelayMs + jitter(cfg.minMs, cfg.maxMs));
 }
@@ -166,6 +193,12 @@ function subscribeManualEvents() {
       // kiosk just sets its counter and continues.
       if (data.event === 'kill-count' && typeof data.value === 'number') {
         setKillCount(data.value);
+        return;
+      }
+      // Director control (phase pin, freeze, forced weather, seed reroll) is
+      // operator state rather than a theatre event, so it never reaches fire().
+      if (data.event === 'director') {
+        director.applyControl(data);
         return;
       }
       if (data.event) fire(data.event);

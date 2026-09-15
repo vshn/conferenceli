@@ -5,6 +5,7 @@ import logging
 import random
 import threading
 import time
+from datetime import date
 from functools import wraps
 
 # Patch all to make the app gevent compatible
@@ -41,6 +42,18 @@ display_mode = {"value": "day"}
 # The kiosk's local counter is seeded from this value on initial render and
 # whenever the operator pushes a new value via /control/kill-count.
 kill_count_seed = {"value": 0}
+
+# Operator override for the generated harbour. None means "derive from the
+# conference slug and today's date", which is the normal case; rerolling parks
+# an explicit seed here so every kiosk that reloads picks up the same world.
+world_seed_override = {"value": None}
+
+
+def current_world_seed():
+    if world_seed_override["value"]:
+        return world_seed_override["value"]
+    return f"{config.CONFERENCE_SLUG}-{date.today().isoformat()}"
+
 
 # Subscribers for the manual theatre-event SSE channel. Each open client gets
 # its own gevent.queue.Queue; broadcast_event fans out to all of them.
@@ -140,17 +153,14 @@ def create_app():
 
     def do_chaos_index(pod_index):
         try:
-            label_selector = (
-                f"statefulset.kubernetes.io/pod-name={pod_index}"
-            )
+            label_selector = f"statefulset.kubernetes.io/pod-name={pod_index}"
             pods = v1.list_namespaced_pod(
                 namespace, label_selector=label_selector
             ).items
             running = [
                 p
                 for p in pods
-                if p.status.phase == "Running"
-                and p.metadata.deletion_timestamp is None
+                if p.status.phase == "Running" and p.metadata.deletion_timestamp is None
             ]
             if not running:
                 logging.info(f"No running pod for index {pod_index}")
@@ -178,7 +188,13 @@ def create_app():
     # Define routes
     @app.route("/")
     def index():
-        return render_template("index.html", kill_count_seed=kill_count_seed["value"])
+        return render_template(
+            "index.html",
+            kill_count_seed=kill_count_seed["value"],
+            world_seed=current_world_seed(),
+            booth_open=config.BOOTH_OPEN,
+            booth_close=config.BOOTH_CLOSE,
+        )
 
     @app.route("/chaos")
     @requires_auth
@@ -317,6 +333,56 @@ def create_app():
         broadcast_event("kill-count", value=n)
         logging.info(f"Kill count seeded to {n}")
         return jsonify({"message": f"Kill count set to {n}"}), 200
+
+    # Director control: pin a phase, freeze the arc, force weather, or reroll
+    # the harbour. Everything except the reroll is pure presentation state the
+    # kiosk applies immediately; a reroll changes the generated world, which
+    # only happens at load, so the kiosk reloads itself with the new seed.
+    PHASES = [
+        "dawn",
+        "morning",
+        "midday",
+        "afternoon",
+        "golden",
+        "dusk",
+        "night",
+    ]
+    WEATHER = ["clear", "rain", "snow", "fog"]
+
+    @app.route("/control/director", methods=["POST"])
+    @requires_control_session
+    def control_director():
+        data = request.get_json(silent=True) or request.form
+        payload = {}
+
+        phase = data.get("phase")
+        if phase is not None:
+            # An empty string clears the pin and hands the scene back to the clock.
+            if phase and phase not in PHASES:
+                return jsonify({"message": f"Unknown phase {phase}"}), 400
+            payload["phase"] = phase or None
+
+        if "frozen" in data:
+            raw = data.get("frozen")
+            payload["frozen"] = raw in (True, "true", "1", 1, "on")
+
+        weather = data.get("weather")
+        if weather is not None:
+            if weather and weather not in WEATHER:
+                return jsonify({"message": f"Unknown weather {weather}"}), 400
+            payload["weather"] = weather or None
+
+        if data.get("reroll") in (True, "true", "1", 1, "on"):
+            new_seed = f"{config.CONFERENCE_SLUG}-{random.randint(1000, 9999)}"
+            world_seed_override["value"] = new_seed
+            payload["seed"] = new_seed
+
+        if not payload:
+            return jsonify({"message": "Nothing to change"}), 400
+
+        broadcast_event("director", **payload)
+        logging.info(f"Director control: {payload}")
+        return jsonify({"message": f"Director: {payload}"}), 200
 
     @app.route("/stream_events")
     def stream_events():

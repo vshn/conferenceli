@@ -1,8 +1,12 @@
 // Builds and mutates the SVG scene in response to state events.
-import { events as stateEvents, pods, nodes, mode } from './state.js';
+import { events as stateEvents, pods, nodes } from './state.js';
 import { addRecurringEmitter, emitSmokeWisp } from './effects.js';
+import { world } from './theatre/seed.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// Monotonic counter used to stagger the ship bob animations.
+let shipSeq = 0;
 
 function el(tag, attrs = {}, parent = null) {
   const e = document.createElementNS(SVG_NS, tag);
@@ -47,63 +51,116 @@ function buildSky() {
   el('circle', { cx:  12, cy:   4, r: 3, fill: '#cfcab0', opacity: 0.6 }, moon);
   el('circle', { cx:  -4, cy:  12, r: 3, fill: '#cfcab0', opacity: 0.6 }, moon);
 
-  // Stars — small twinkling dots scattered across the upper sky (night-only).
-  // Kept at y >= 56 to clear the cropped top bleed on 16:9, and routed around
-  // the chrome boxes that would otherwise hide them: the logo (x 24-284,
-  // y 56-146), the kill counter (x ~520-760, y 64-106) and the QR card
-  // (x 1096-1256, y 56-236).
-  const starPositions = [
-    [170, 200], [410,  58], [530, 200], [760, 175], [860,  56], [990, 105],
-    [330, 130], [480, 150], [640, 120], [900, 150], [1050, 210], [1010, 260],
-  ];
-  starPositions.forEach(([cx, cy], i) => {
+  // Stars — small twinkling dots scattered across the upper sky. Positions are
+  // seeded (seed.js keeps them clear of the chrome boxes and stops them
+  // clumping), so each conference gets its own sky.
+  world.stars.forEach((s, i) => {
     el('circle', {
-      class: `star star-${i % 4}`,
-      cx, cy, r: 1 + (i % 3) * 0.4,
+      class: `star star-${s.cls}`,
+      cx: s.x.toFixed(1), cy: s.y.toFixed(1), r: s.r.toFixed(2),
       fill: '#fdfdf2',
-      opacity: 0,
     }, nightLayer);
   });
 
-  // Clouds — 4 puffy ellipsoid clusters at different scales/Y. Keep them low
-  // enough that the puffs clear the cropped top bleed (drift keyframes in
-  // styles.css carry the same y values and must be kept in sync).
-  const clouds = [
-    { x: 180,  y: 110, scale: 1.0, opacity: 0.85 },
-    { x: 520,  y: 88,  scale: 0.7, opacity: 0.75 },
-    { x: 880,  y: 160, scale: 1.2, opacity: 0.90 },
-    { x: 1180, y: 76,  scale: 0.6, opacity: 0.70 },
-  ];
-  clouds.forEach((c, i) => {
+  // Clouds — seeded count, positions, scales and drift speeds. Because the
+  // positions vary per seed, the drift keyframes can't live in styles.css as
+  // static rules; they're generated here into one injected stylesheet.
+  let css = '';
+  world.clouds.forEach((c, i) => {
     const g = el('g', {
       class: 'cloud', id: `cloud-${i}`,
-      transform: `translate(${c.x},${c.y}) scale(${c.scale})`,
-      opacity: c.opacity,
+      transform: `translate(${c.x.toFixed(1)},${c.y.toFixed(1)}) scale(${c.scale.toFixed(2)})`,
+      opacity: c.opacity.toFixed(2),
     }, sky);
-    // 3 overlapping ellipses make a fluffy cloud
     el('ellipse', { cx: 0,   cy: 0,  rx: 50, ry: 22, fill: '#ffffff' }, g);
     el('ellipse', { cx: 35,  cy: -8, rx: 40, ry: 26, fill: '#ffffff' }, g);
     el('ellipse', { cx: -30, cy: 4,  rx: 38, ry: 20, fill: '#f5fafe' }, g);
+    if (c.puffs > 3) {
+      el('ellipse', { cx: 8, cy: 10, rx: 30, ry: 15, fill: '#eef6fc' }, g);
+    }
+
+    // Travel far enough off both edges that the wrap is never visible.
+    const from = c.dir > 0 ? -220 : 1400;
+    const to = c.dir > 0 ? 1400 : -220;
+    css += `@keyframes cloudDrift${i} {\n` +
+      `  from { transform: translate(${from}px, ${c.y.toFixed(1)}px) scale(${c.scale.toFixed(2)}); }\n` +
+      `  to   { transform: translate(${to}px, ${c.y.toFixed(1)}px) scale(${c.scale.toFixed(2)}); }\n` +
+      `}\n` +
+      `#cloud-${i} { animation: cloudDrift${i} ${c.durationS.toFixed(0)}s linear infinite; ` +
+      `animation-delay: -${(c.durationS * Math.abs(c.x + 220) / 1620).toFixed(1)}s; }\n`;
   });
+  const styleEl = document.createElement('style');
+  styleEl.id = 'seeded-cloud-drift';
+  styleEl.textContent = css;
+  document.head.appendChild(styleEl);
 }
 
 function buildBackground() {
   const bg = document.getElementById('layer-background');
-  // Distant hills/harbor silhouette — desaturated darker shape
-  el('path', {
-    d: 'M0,520 Q150,470 320,500 T640,490 T960,500 T1280,485 L1280,560 L0,560 Z',
-    fill: '#7d99a6', opacity: 0.55
-  }, bg);
-  el('path', {
-    d: 'M0,560 Q200,540 400,555 T800,545 T1280,560 L1280,600 L0,600 Z',
-    fill: '#5a7b8a', opacity: 0.7
-  }, bg);
+
+  // Far ridge — seeded coastline. Drawn first so the city stands on it.
+  el('path', { class: 'hill-far', d: world.farRidge.d, fill: '#7d99a6' }, bg);
+
+  buildSkyline(bg);
+
+  // Near ridge covers the base of the city, which is what gives the harbour
+  // its sense of depth rather than reading as one flat cut-out.
+  el('path', { class: 'hill-near', d: world.nearRidge.d, fill: '#5a7b8a' }, bg);
+}
+
+// Seeded city silhouette plus individually-addressable windows. The buildings
+// live in the background layer so they dim with dusk; the windows go into the
+// night-additive layer so they shine *through* the dimming — the same trick the
+// lampposts and the lighthouse beam already use.
+function buildSkyline(bg) {
+  const nightLayer = document.getElementById('layer-night-additive');
+  const windowGroup = el('g', { id: 'skyline-windows' }, nightLayer);
+
+  for (const b of world.skyline) {
+    const g = el('g', { class: 'skyline-building' }, bg);
+    el('rect', {
+      x: b.x.toFixed(1), y: b.y.toFixed(1),
+      width: b.w.toFixed(1), height: (b.groundY - b.y + 6).toFixed(1),
+    }, g);
+
+    switch (b.roof) {
+      case 'step':
+        el('rect', {
+          x: (b.x + b.w * 0.25).toFixed(1), y: (b.y - 10).toFixed(1),
+          width: (b.w * 0.5).toFixed(1), height: 10,
+        }, g);
+        break;
+      case 'pitch':
+        el('polygon', {
+          points: `${b.x.toFixed(1)},${b.y.toFixed(1)} ` +
+                  `${(b.x + b.w / 2).toFixed(1)},${(b.y - 14).toFixed(1)} ` +
+                  `${(b.x + b.w).toFixed(1)},${b.y.toFixed(1)}`,
+        }, g);
+        break;
+      case 'antenna':
+        el('rect', {
+          x: (b.x + b.w / 2 - 0.8).toFixed(1), y: (b.y - 22).toFixed(1),
+          width: 1.6, height: 22,
+        }, g);
+        break;
+    }
+
+    for (const w of b.windows) {
+      el('rect', {
+        class: 'skyline-window',
+        'data-thresh': w.thresh.toFixed(3),
+        x: w.x.toFixed(1), y: w.y.toFixed(1),
+        width: 4, height: 6,
+      }, windowGroup);
+    }
+  }
 }
 
 function buildLighthouse() {
   const bg = document.getElementById('layer-background');
   const nightLayer = document.getElementById('layer-night-additive');
-  const g = el('g', { id: 'lighthouse', transform: 'translate(1180, 360)' }, bg);
+  const lx = world.lighthouseX.toFixed(1);
+  const g = el('g', { id: 'lighthouse', transform: `translate(${lx}, 360)` }, bg);
 
   // Rocky base
   el('path', { d: 'M-30,200 Q-20,180 0,178 Q20,180 30,200 Z', fill: '#4a4a4a' }, g);
@@ -210,7 +267,7 @@ function buildLighthouse() {
   // The polygon's bbox spans x=[-1200, 0]: 0% offset = far tip, 100% = lamp.
   // Stops are arranged so the beam is brightest at the source and fades to
   // zero well before reaching the scene edge, eliminating the hard cutoff.
-  const beamGroup = el('g', { transform: 'translate(1180, 360)' }, nightLayer);
+  const beamGroup = el('g', { transform: `translate(${lx}, 360)` }, nightLayer);
   const ndefs = el('defs', {}, beamGroup);
   ndefs.innerHTML = `
     <linearGradient id="beamGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -235,22 +292,55 @@ function buildLighthouse() {
 function buildWater() {
   const w = document.getElementById('layer-water');
 
-  // Base water rectangle
-  el('rect', { x: 0, y: 720, width: 1280, height: 80, fill: '#2b6e8f' }, w);
+  const defs = el('defs', {}, w);
+  defs.innerHTML = `
+    <linearGradient id="glitterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#fff6cf" stop-opacity="0.85"/>
+      <stop offset="45%"  stop-color="#ffe9a0" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#ffe9a0" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="lightReflectGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#fff8c0" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#fff8c0" stop-opacity="0"/>
+    </linearGradient>
+  `;
 
-  // 3 wave layers (paths) for parallax — animation added later. Crests are
-  // kept above y=752 so all three stay visible once the bottom bleed is cropped.
-  const waveColors = ['#4a8caa', '#3a7d9a', '#2b6e8f'];
+  // Base water rectangle. Colour comes from the Director's phase palette.
+  el('rect', { class: 'water-base', x: 0, y: 720, width: 1280, height: 80 }, w);
+
+  // 3 wave layers (paths) for parallax. Crests are kept above y=752 so all
+  // three stay visible once the bottom bleed is cropped.
   [724, 738, 752].forEach((y, i) => {
     el('path', {
       class: `wave wave-${i}`,
       d: `M-200,${y} Q-100,${y-4} 0,${y} T200,${y} T400,${y} T600,${y} T800,${y} T1000,${y} T1200,${y} T1400,${y} T1600,${y} L1600,800 L-200,800 Z`,
-      fill: waveColors[i],
       opacity: 0.7,
     }, w);
   });
 
-  // Water glints — small white highlights fading in/out at random positions
+  // Sun/moon glitter column. The Director slides it horizontally so it always
+  // sits directly below whichever body is in the sky — the single cheapest cue
+  // that the light source has moved.
+  el('path', {
+    id: 'sun-glitter',
+    d: 'M-34,722 L34,722 L104,800 L-104,800 Z',
+    fill: 'url(#glitterGrad)',
+    transform: 'translate(640, 0)',
+  }, w);
+
+  // Lighthouse reflection — an authored stripe rather than a mirrored copy.
+  // The lighthouse lives in the background layer, which the opaque water rect
+  // covers, so a <use> clone would have to cross SVG roots to be visible.
+  el('rect', {
+    id: 'lighthouse-reflection',
+    x: (world.lighthouseX - 7).toFixed(1), y: 722, width: 14, height: 70,
+    fill: 'url(#lightReflectGrad)',
+  }, w);
+
+  // Water glints — small white highlights fading in/out. Wrapped in a group so
+  // the phase palette can scale them all at once without fighting the
+  // per-glint opacity keyframes.
+  const glints = el('g', { class: 'water-glints' }, w);
   const glintXs = [120, 360, 580, 760, 980, 1180];
   glintXs.forEach((cx, i) => {
     el('ellipse', {
@@ -259,7 +349,20 @@ function buildWater() {
       rx: 4, ry: 1,
       fill: '#ffffff',
       opacity: 0,
+    }, glints);
+  });
+
+  // Seeded buoys — permanent scenery rather than events, so the harbour has
+  // something bobbing in it even when nothing is happening.
+  world.buoys.forEach((b, i) => {
+    const g = el('g', {
+      class: `buoy buoy-${i % 3}`,
+      transform: `translate(${b.x.toFixed(1)}, ${b.y.toFixed(1)})`,
     }, w);
+    el('ellipse', { cx: 0, cy: 4, rx: 9, ry: 2.5, fill: '#0d2a3a', opacity: 0.35 }, g);
+    el('path', { d: 'M-6,2 L6,2 L4,-8 L-4,-8 Z', fill: b.color, stroke: '#1a1a1a', 'stroke-width': 0.6 }, g);
+    el('rect', { x: -0.8, y: -16, width: 1.6, height: 8, fill: '#33333a' }, g);
+    el('circle', { class: 'buoy-lamp', cx: 0, cy: -17, r: 1.8, fill: '#ffd36a' }, g);
   });
 }
 
@@ -289,8 +392,14 @@ function buildDock() {
 function buildShip({ id, x, y, name }) {
   const ships = document.getElementById('layer-ships');
   const g = el('g', { class: 'ship', id, 'data-name': name, transform: `translate(${x},${y})` }, ships);
-  // Inner group for bob animation (so the outer translate stays stable)
+  // Inner group for bob animation (so the outer translate stays stable).
+  // The bob stagger used to come from :nth-child rules in styles.css, but the
+  // reflections host and its <defs> now sit ahead of the ships in this layer,
+  // which shifted every index. A per-ship counter is immune to that.
   const inner = el('g', { class: 'ship-bob' }, g);
+  const seq = shipSeq++ % 4;
+  inner.style.animationDuration = `${(3 + seq * 0.2).toFixed(1)}s`;
+  inner.style.animationDelay = `-${(seq * 0.7).toFixed(1)}s`;
 
   // Hull — trapezoid (compact: 240 wide so 4 ships fit without overlap)
   el('polygon', {
@@ -432,7 +541,51 @@ function startSeagulls() {
   }
 }
 
+// Waterline the reflections mirror about, and how much they're squashed to
+// suggest a viewing angle rather than a perfect mirror.
+const WATERLINE_Y = 724;
+const REFLECT_SQUASH = 0.6;
+
+// Host group for ship reflections. It has to live inside the *same* SVG root as
+// the ships: <use> across the separate layer SVGs is inconsistently supported,
+// so everything mirrored this way is deliberately kept in layer-ships. Being in
+// the ships layer also puts the reflections above the opaque water rect, which
+// is exactly where a reflection belongs.
+function buildReflectionHost() {
+  const ships = document.getElementById('layer-ships');
+
+  const defs = el('defs', {}, ships);
+  const clip = el('clipPath', { id: 'waterClip' }, defs);
+  el('rect', { x: 0, y: WATERLINE_Y + 2, width: 1280, height: 76 }, clip);
+
+  // Outer group carries the CSS wobble, inner carries the mirror transform —
+  // a CSS animation on `transform` would otherwise overwrite the mirror.
+  const outer = el('g', { id: 'ship-reflections', 'clip-path': 'url(#waterClip)' }, ships);
+  el('g', {
+    id: 'ship-reflections-mirror',
+    transform: `translate(0, ${(WATERLINE_Y * (1 + REFLECT_SQUASH)).toFixed(1)}) ` +
+               `scale(1, -${REFLECT_SQUASH})`,
+  }, outer);
+}
+
+function addShipReflection(name) {
+  const mirror = document.getElementById('ship-reflections-mirror');
+  if (!mirror) return;
+  const u = document.createElementNS(SVG_NS, 'use');
+  u.setAttribute('href', `#ship-${cssId(name)}`);
+  u.setAttribute('id', `reflect-${cssId(name)}`);
+  mirror.appendChild(u);
+}
+
+function removeShipReflection(name) {
+  const u = document.getElementById(`reflect-${cssId(name)}`);
+  if (u && u.parentNode) u.remove();
+}
+
 function buildChrome() {
+  const nameEl = document.getElementById('harbour-name');
+  if (nameEl) nameEl.textContent = world.name;
+
   const card = document.getElementById('qr-card');
   card.innerHTML = `
     <div class="qr-image" role="img" aria-label="QR code to vs.hn/boothraffle"></div>
@@ -486,6 +639,7 @@ function addShip(name) {
   // Spawn off-screen first; reflow will move it (animations.js handles sail-in)
   const g = buildShip({ id: `ship-${cssId(name)}`, x: SHIP_OFF_X, y: SHIP_BASE_Y, name });
   shipEls.set(name, g);
+  addShipReflection(name);
   // Smokestack tip in scene-local coords (ship at y=700, stack rect y=-78, x offset ~113)
   stackPositions.set(name, { x: SHIP_OFF_X + 107, y: SHIP_BASE_Y - 76, _t: 0, dark: false });
   reflowShips();
@@ -497,6 +651,7 @@ function removeShip(name) {
   shipEls.delete(name);
   stackPositions.delete(name);
   shipSlotMap.delete(name);
+  removeShipReflection(name);
   // Drop any container entries that lived on this ship; their DOM nodes will
   // be removed when the ship's group is removed below.
   for (const [idx, gC] of containerEls) {
@@ -636,13 +791,6 @@ export function hideScorch(shipName, slot) {
   }
 }
 
-function applyMode(m) {
-  const scene = document.getElementById('scene');
-  if (!scene) return;
-  if (m === 'night') scene.classList.add('night-mode');
-  else scene.classList.remove('night-mode');
-}
-
 export function init() {
   buildChrome();
   buildSky();
@@ -650,10 +798,12 @@ export function init() {
   buildLighthouse();
   buildWater();
   buildDock();
+  buildReflectionHost();
   startSeagulls();
 
-  applyMode(mode.value);
-  stateEvents.addEventListener('mode:change', e => applyMode(e.detail.mode));
+  // The `night-mode` class is owned by the Director, which resolves the manual
+  // override and the wall-clock arc into one effective phase. Toggling it here
+  // too would mean two writers fighting over the same class.
 
   // Recurring smokestack emitters — one global registration walks all ships
   addRecurringEmitter((dt) => {

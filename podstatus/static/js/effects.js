@@ -13,6 +13,110 @@ let brightCanvas, brightCtx;  // separate canvas above night-overlay for flashes
 let lastT = 0;
 let recurringEmitters = [];
 
+// --- Weather -------------------------------------------------------------
+// Rain and snow get their own pool. Sharing the main pool would let a downpour
+// starve the explosion particles, which are the thing people actually came to
+// see — a chaos kill during a storm has to look like a chaos kill.
+const MAX_WEATHER = 260;
+const weatherParts = [];
+const weather = { type: null, intensity: 0 };
+
+// Stage px/s, positive blows right. Smoke, rain and snow all read it, so a
+// gusty day bends the smokestack plumes the same way it slants the rain.
+let wind = 8;
+let windTarget = 8;
+let windPhase = 0;
+
+export function getWind() { return wind; }
+
+export function getWeather() { return { ...weather }; }
+
+// Driven by the Director. `null` means clear.
+export function setWeather(w) {
+  const type = w?.type ?? null;
+  const intensity = Math.max(0, Math.min(1, w?.intensity ?? 0));
+  weather.type = intensity > 0.01 ? type : null;
+  weather.intensity = weather.type ? intensity : 0;
+
+  if (weather.type === 'rain') windTarget = 40 + 70 * intensity;
+  else if (weather.type === 'snow') windTarget = 12 + 20 * intensity;
+  else if (weather.type === 'fog') windTarget = 4;
+  else windTarget = 8;
+
+  // Fog is a flat veil rather than particles: thousands of slow alpha circles
+  // is the single most expensive thing this scene could do on a Pi, and it
+  // looks worse than a gradient.
+  const scene = document.getElementById('scene');
+  if (scene) {
+    scene.style.setProperty('--fog-op',
+      weather.type === 'fog' ? (0.62 * intensity).toFixed(3) : '0');
+  }
+}
+
+function makeRainDrop() {
+  return {
+    type: 'rain',
+    x: -120 + Math.random() * 1520,
+    y: -30 - Math.random() * 120,
+    vy: 900 + Math.random() * 420,
+    len: 9 + Math.random() * 11,
+    alpha: 0.22 + Math.random() * 0.3,
+  };
+}
+
+function makeSnowFlake() {
+  return {
+    type: 'snow',
+    x: -80 + Math.random() * 1440,
+    y: -20 - Math.random() * 120,
+    vy: 26 + Math.random() * 46,
+    size: 1.1 + Math.random() * 2.2,
+    sway: Math.random() * Math.PI * 2,
+    swaySpeed: 0.6 + Math.random() * 1.1,
+    alpha: 0.5 + Math.random() * 0.45,
+  };
+}
+
+function spawnWeather(dt) {
+  if (!weather.type || weather.type === 'fog' || weather.intensity <= 0) return;
+  const rate = weather.type === 'rain' ? 430 : 85;
+  const want = rate * weather.intensity * qualityScale * dt;
+  let n = Math.floor(want);
+  if (Math.random() < want - n) n++;
+  const cap = Math.round(MAX_WEATHER * qualityScale);
+  for (let i = 0; i < n && weatherParts.length < cap; i++) {
+    weatherParts.push(weather.type === 'rain' ? makeRainDrop() : makeSnowFlake());
+  }
+}
+
+function stepWeather(dt) {
+  for (let i = weatherParts.length - 1; i >= 0; i--) {
+    const p = weatherParts[i];
+    p.y += p.vy * dt;
+    if (p.type === 'rain') {
+      p.x += wind * dt * 1.8;
+      // Rain stops at the waterline rather than falling through the harbour.
+      if (p.y > 745) { weatherParts.splice(i, 1); continue; }
+      ctx.strokeStyle = `rgba(190,215,235,${p.alpha})`;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - wind * 0.02, p.y + p.len);
+      ctx.stroke();
+    } else {
+      p.sway += p.swaySpeed * dt;
+      p.x += (wind * 0.5 + Math.sin(p.sway) * 14) * dt;
+      if (p.y > 752) { weatherParts.splice(i, 1); continue; }
+      ctx.fillStyle = `rgba(255,255,255,${p.alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // A drop that has blown clean off the stage is never coming back.
+    if (p.x < -200 || p.x > 1480) weatherParts.splice(i, 1);
+  }
+}
+
 // FPS-aware quality scaling for auto-degrade (Task 26).
 let fpsAvg = 60;
 let qualityScale = 1.0;
@@ -173,6 +277,13 @@ function updateQuality(dt) {
 
 function step(dt) {
   updateQuality(dt);
+
+  // Wind eases toward its target and breathes, so gusts feel weathery rather
+  // than like a value someone typed in.
+  windPhase += dt * 0.35;
+  wind += (windTarget - wind) * Math.min(1, dt * 0.6);
+  const gust = wind * (1 + Math.sin(windPhase) * 0.22);
+
   recurringEmitters.forEach(fn => fn(dt));
 
   ctx.clearRect(0, 0, WORLD_W, WORLD_H);
@@ -187,10 +298,16 @@ function step(dt) {
     }
     p.vy += p.gravity * dt;
     p.x += p.vx * dt;
+    // Only the light, drifting types are pushed around by the wind. Debris is
+    // heavy enough that wind-blown shrapnel would look wrong.
+    if (p.type === 'smoke' || p.type === 'ember') p.x += gust * dt * 0.4;
     p.y += p.vy * dt;
     p.rotation += p.vr * dt;
     drawParticle(p);
   }
+
+  spawnWeather(dt);
+  stepWeather(dt);
 }
 
 function drawParticle(p) {

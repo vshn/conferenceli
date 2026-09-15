@@ -3,6 +3,38 @@
   --stage-h: 800px;
   /* Set by fitStage() in main.js to fit the 1280x800 stage onto the actual screen */
   --stage-scale: 1;
+
+  /* Phase palette. Every value here is overwritten by the Director on its 2s
+     tick (theatre/director.js); these defaults are the midday look, so the
+     scene still renders correctly before the first tick — or if the Director
+     fails to start at all. */
+  --sky-top: #4ea6e8;
+  --sky-mid: #cfe9f5;
+  --sky-bot: #b8d8e8;
+  --water-base: #2b6e8f;
+  --wave-0: #4a8caa;
+  --wave-1: #3a7d9a;
+  --wave-2: #2b6e8f;
+  --haze-op: 0.55;
+  --overlay-op: 0;
+  --glint-op: 1;
+  --reflect-op: 0.3;
+  --sun-op: 1;
+  --moon-op: 0;
+  --star-op: 0;
+  --lamp-op: 0;
+  --beam-op: 0;
+  --fog-op: 0;
+
+  /* Sun-driven container shadows. The Director flips --shadow-dx at midday. */
+  --shadow-dx: 1.5px;
+  --shadow-dy: 1.6px;
+  --shadow-blur: 2.5px;
+  --shadow-op: 0.3;
+
+  /* How long the palette takes to cross-fade. Matched to the Director's tick
+     so consecutive ticks blend into one continuous change rather than steps. */
+  --phase-fade: 2s;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -21,7 +53,9 @@ html, body {
   position: relative;
   width: var(--stage-w);
   height: var(--stage-h);
-  background: linear-gradient(to bottom, #87ceeb 0%, #cfe9f5 60%, #b8d8e8 100%);
+  background: linear-gradient(to bottom,
+    var(--sky-top) 0%, var(--sky-mid) 60%, var(--sky-bot) 100%);
+  transition: background var(--phase-fade) linear;
   overflow: hidden;
   /* --shake-x is driven by the explosion screen-shake in animations.js. It is
      composed here rather than animated as `transform` directly, because
@@ -85,6 +119,21 @@ html, body {
   color: #222;
 }
 
+/* Harbour name — the seed's visible handle. Deliberately small and low
+   contrast: it's there so a returning visitor can say "last year was Port
+   Kestrel, this one's different", not to compete with the logo. */
+#harbour-name {
+  position: absolute;
+  top: 152px; left: 24px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
 /* Kill counter — easter egg, session-only */
 #kill-counter {
   position: absolute;
@@ -124,19 +173,92 @@ html, body {
   100% { transform: translateX(-50%) scale(1);    background: rgba(255,255,255,0.85); }
 }
 
-/* === Idle ambiance: clouds === */
+/* === Idle ambiance: clouds ===
+ * Cloud count, positions, scales and speeds are seeded per conference, so the
+ * drift keyframes can't be static rules — scene.js generates them into an
+ * injected <style id="seeded-cloud-drift">. Only the shared bits live here.
+ */
 .cloud { will-change: transform; }
-#cloud-0 { animation: drift0 80s linear infinite; }
-#cloud-1 { animation: drift1 110s linear infinite; }
-#cloud-2 { animation: drift2 95s linear infinite; }
-#cloud-3 { animation: drift3 130s linear infinite; }
-@keyframes drift0 { from { transform: translate(180px, 110px) scale(1.0); } to { transform: translate(1380px, 110px) scale(1.0); } }
-@keyframes drift1 { from { transform: translate(520px,  88px) scale(0.7); } to { transform: translate(1380px,  88px) scale(0.7); } }
-@keyframes drift2 { from { transform: translate(880px, 160px) scale(1.2); } to { transform: translate(1380px, 160px) scale(1.2); } }
-@keyframes drift3 { from { transform: translate(1180px, 76px) scale(0.6); } to { transform: translate(-200px,  76px) scale(0.6); } }
+
+/* === Seeded terrain + skyline === */
+.hill-far  { fill: #7d99a6; opacity: var(--haze-op, 0.55); transition: opacity var(--phase-fade) linear; }
+.hill-near { fill: #5a7b8a; opacity: calc(var(--haze-op, 0.55) + 0.15); transition: opacity var(--phase-fade) linear; }
+.skyline-building > * { fill: #56707e; opacity: calc(var(--haze-op, 0.55) + 0.2); }
+
+/* Windows live in the night-additive layer so they shine through the dusk
+   overlay. Individual opacity is set by the Director as the city fills in. */
+.skyline-window {
+  fill: #ffe7a8;
+  opacity: 0;
+  transition: opacity 1.6s ease-in-out;
+}
+
+/* === Water reflections ===
+ * <use> clones of the ships, mirrored and squashed about the waterline. The
+ * outer group carries the wobble so it can't overwrite the inner mirror
+ * transform; the clip keeps the submerged part of the hull from reflecting
+ * back up over the real ship.
+ */
+#ship-reflections {
+  opacity: var(--reflect-op, 0.3);
+  filter: blur(1.1px);
+  transition: opacity var(--phase-fade) linear;
+  animation: reflectWobble 7s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes reflectWobble {
+  0%, 100% { transform: translateX(-2.5px); }
+  50%      { transform: translateX(2.5px);  }
+}
+
+#sun-glitter {
+  opacity: calc(var(--glint-op, 1) * 0.75);
+  transition: opacity var(--phase-fade) linear;
+}
+#lighthouse-reflection {
+  opacity: var(--lamp-op, 0);
+  transition: opacity var(--phase-fade) linear;
+}
+
+/* === Buoys === */
+.buoy { will-change: transform; transform-box: view-box; }
+.buoy-0 { animation: buoyBob 4.2s ease-in-out infinite;        }
+.buoy-1 { animation: buoyBob 3.6s ease-in-out infinite -1.4s;  }
+.buoy-2 { animation: buoyBob 4.8s ease-in-out infinite -2.6s;  }
+@keyframes buoyBob {
+  0%, 100% { translate: 0 0;      rotate: -4deg; }
+  50%      { translate: 0 -3.5px; rotate:  4deg; }
+}
+.buoy-lamp {
+  opacity: var(--lamp-op, 0);
+  filter: drop-shadow(0 0 5px #ffd36a);
+  transition: opacity var(--phase-fade) linear;
+}
+
+/* === Fog veil ===
+ * A flat gradient rather than particles: thousands of slow alpha circles is the
+ * most expensive thing this scene could ask a Raspberry Pi to draw, and it
+ * looks worse than this does.
+ */
+#scene::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 56;
+  background: linear-gradient(to bottom,
+    rgba(214, 226, 232, 0.15) 0%,
+    rgba(222, 232, 238, 0.75) 55%,
+    rgba(230, 238, 243, 0.55) 100%);
+  opacity: var(--fog-op, 0);
+  transition: opacity 4s ease-in-out;
+}
 
 /* === Idle ambiance: water waves === */
-.wave { will-change: transform; }
+.water-base { fill: var(--water-base, #2b6e8f); transition: fill var(--phase-fade) linear; }
+.wave-0 { fill: var(--wave-0, #4a8caa); }
+.wave-1 { fill: var(--wave-1, #3a7d9a); }
+.wave-2 { fill: var(--wave-2, #2b6e8f); }
+.wave { will-change: transform; transition: fill var(--phase-fade) linear; }
 .wave-0 { animation: waveDrift0 8s linear infinite; }
 .wave-1 { animation: waveDrift1 14s linear infinite; }
 .wave-2 { animation: waveDrift2 22s linear infinite; }
@@ -144,7 +266,13 @@ html, body {
 @keyframes waveDrift1 { from { transform: translateX(-50px);} to { transform: translateX(150px);  } }
 @keyframes waveDrift2 { from { transform: translateX(0);    } to { transform: translateX(-100px); } }
 
-/* Water glints — sun reflecting off ripples */
+/* Water glints — sun reflecting off ripples. The group opacity is scaled by
+   the phase so the water stops sparkling after dark, without having to fight
+   the per-glint keyframes for the opacity property. */
+.water-glints {
+  opacity: var(--glint-op, 1);
+  transition: opacity var(--phase-fade) linear;
+}
 .water-glint { will-change: opacity; }
 @keyframes glintFade {
   0%, 35%, 100% { opacity: 0; }
@@ -161,17 +289,15 @@ html, body {
 .ship { will-change: transform; }
 .ship-bob {
   transform-origin: center bottom; will-change: transform;
-  /* Default for any ship beyond the 4 nth-child overrides below. */
+  /* Duration and delay are staggered per ship by scene.js. They used to come
+     from :nth-child rules here, but the reflections host now precedes the
+     ships in the layer, so positional selectors no longer line up. */
   animation: shipBob 3.2s ease-in-out infinite;
 }
 @keyframes shipBob {
   0%,100% { transform: translateY(0); }
   50%     { transform: translateY(-3px); }
 }
-.ship:nth-child(1) .ship-bob { animation: shipBob 3s ease-in-out infinite 0s; }
-.ship:nth-child(2) .ship-bob { animation: shipBob 3.4s ease-in-out infinite -0.7s; }
-.ship:nth-child(3) .ship-bob { animation: shipBob 3.1s ease-in-out infinite -1.3s; }
-.ship:nth-child(4) .ship-bob { animation: shipBob 3.6s ease-in-out infinite -2.1s; }
 
 /* === Idle ambiance: lighthouse ===
  * Beam opacity is driven by night mode only — a real lighthouse beam is
@@ -181,7 +307,10 @@ html, body {
 #lighthouse-beam {
   transform-origin: 0 25px;
   animation: beamSpin 8s linear infinite;
-  opacity: 0 !important;
+  /* Driven by the phase palette: invisible in daylight, full at night, and
+     ramping through dusk — a real beam doesn't switch on all at once. */
+  opacity: var(--beam-op, 0);
+  transition: opacity var(--phase-fade) linear;
 }
 @keyframes beamSpin {
   from { transform: rotate(0deg);   }
@@ -237,6 +366,11 @@ html, body {
   animation: wingFlap 0.25s ease-in-out infinite;
 }
 
+/* === Death aftermath === */
+/* Iridescent rather than flat black, so the slick picks up the golden-hour
+   palette instead of reading as a hole in the water. */
+.oil-slick { fill: #1d2a2f; mix-blend-mode: multiply; }
+
 /* === Death scorch flame === */
 .flame { transform-origin: center bottom; transform-box: fill-box; }
 .flame-outer, .flame-mid, .flame-inner {
@@ -273,7 +407,17 @@ html, body {
 }
 
 /* === Pod container states === */
-.pod-container { transition: opacity 0.4s; }
+/* The sun-driven shadow lives on the group, not on .container-body, so the
+   Failed state's grayscale filter further down still wins on the body itself.
+   Only the containers cast a shadow — five drop-shadows is cheap, shadowing
+   every ship, building and bollard on a Pi is not, and the containers are what
+   the eye is on anyway. The offset flips sign at midday and stretches toward
+   golden hour, which is what reads as "the day is passing". */
+.pod-container {
+  transition: opacity 0.4s, filter var(--phase-fade) linear;
+  filter: drop-shadow(var(--shadow-dx, 1.5px) var(--shadow-dy, 1.6px)
+                      var(--shadow-blur, 2.5px) rgba(0, 0, 0, var(--shadow-op, 0.3)));
+}
 .pod-container[data-state="Pending"]   { opacity: 0.6; }
 .pod-container[data-state="Pending"]   .container-body {
   stroke: #f4c430; stroke-width: 2; stroke-dasharray: 4 3;
@@ -312,7 +456,7 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .cloud, .wave, .water-glint, .ship-bob, #lighthouse-beam,
   .ship-lantern, .ship-lantern.relight, #lighthouse-blink,
-  .drone-rotor,
+  .drone-rotor, .buoy, #ship-reflections,
   .flame-outer, .flame-mid, .flame-inner, .flame-glow,
   .star,
   .pod-container[data-state="Pending"] .container-body,
@@ -322,14 +466,14 @@ html, body {
   }
 }
 
-/* === Night mode ===
- * Toggled by the .night-mode class on #scene (driven by /stream_mode SSE).
- * Triggered server-side via authenticated GET /nightmode (toggle).
+/* === Time of day ===
+ * The Director (theatre/director.js) resolves the wall-clock arc and the manual
+ * night override into one effective phase, then writes the palette variables
+ * on #scene every 2s. Everything below reads those variables, so there are no
+ * day/night branches here any more — dusk is simply a value between the two.
  *
- * Approach: a single dark-blue overlay covers the whole scene with a unified
- * opacity transition (the "dusk fade"). Moon, stars, and lampposts are
- * additive elements that fade in on top — but they all share one transition
- * duration so the change reads as one coherent sunset, not separate pops.
+ * The .night-mode class is still set (by the Director, and only by it) for the
+ * benefit of theatre events and anything else that asks "is it dark out".
  */
 #night-overlay {
   position: absolute; inset: 0;
@@ -337,45 +481,44 @@ html, body {
     rgba(8, 14, 38, 0.78) 0%,
     rgba(14, 26, 56, 0.72) 50%,
     rgba(20, 36, 70, 0.65) 100%);
-  opacity: 0;
+  opacity: var(--overlay-op, 0);
   pointer-events: none;
   z-index: 55;  /* above scene + fx, below chrome */
-  transition: opacity 3.5s ease-in-out;
+  transition: opacity var(--phase-fade) linear;
 }
-#scene.night-mode #night-overlay { opacity: 1; }
 
-/* Celestial bodies + dock lights: same 3.5s envelope as the overlay */
-.sun  { transition: opacity 3.5s ease-in-out; opacity: 1; }
-.moon { transition: opacity 3.5s ease-in-out; opacity: 0; }
-.star { transition: opacity 3.5s ease-in-out; opacity: 0; }
+.sun  { opacity: var(--sun-op, 1);  transition: opacity var(--phase-fade) linear; }
+.moon { opacity: var(--moon-op, 0); transition: opacity var(--phase-fade) linear; }
+
+/* Stars twinkle continuously; --star-op scales the whole envelope so they fade
+   up through dusk instead of popping in. Multiplying inside the keyframes is
+   what lets one property be both animated and phase-driven. */
+/* Base value also covers prefers-reduced-motion, where the twinkle animation
+   is switched off and would otherwise leave every star at zero. */
+.star   { opacity: var(--star-op, 0); transition: opacity var(--phase-fade) linear; }
+.star-0 { animation: starTwinkle 3s   ease-in-out infinite;       }
+.star-1 { animation: starTwinkle 4s   ease-in-out infinite -1.5s; }
+.star-2 { animation: starTwinkle 3.5s ease-in-out infinite -0.7s; }
+.star-3 { animation: starTwinkle 4.5s ease-in-out infinite -2.2s; }
+@keyframes starTwinkle {
+  0%,100% { opacity: calc(var(--star-op, 0) * 0.95); }
+  50%     { opacity: calc(var(--star-op, 0) * 0.35); }
+}
+
 .lamppost-bulb {
-  transition: filter 3.5s ease-in-out, fill 3.5s ease-in-out;
-  filter: drop-shadow(0 0 0 transparent);
-}
-#lighthouse-beam { transition: opacity 3.5s ease-in-out; }
-
-#scene.night-mode .sun  { opacity: 0; }
-#scene.night-mode .moon { opacity: 1; }
-#scene.night-mode .star-0 { opacity: 0.95; animation: starTwinkle 3s ease-in-out infinite; }
-#scene.night-mode .star-1 { opacity: 0.85; animation: starTwinkle 4s ease-in-out infinite -1.5s; }
-#scene.night-mode .star-2 { opacity: 0.75; animation: starTwinkle 3.5s ease-in-out infinite -0.7s; }
-#scene.night-mode .star-3 { opacity: 0.90; animation: starTwinkle 4.5s ease-in-out infinite -2.2s; }
-#scene.night-mode .lamppost-bulb {
-  filter: drop-shadow(0 0 14px #ffe06a) drop-shadow(0 0 6px #ffe9a8);
   fill: #fff5cc;
+  opacity: var(--lamp-op, 0);
+  filter: drop-shadow(0 0 14px #ffe06a) drop-shadow(0 0 6px #ffe9a8);
+  transition: opacity var(--phase-fade) linear;
 }
-#scene.night-mode #lighthouse-beam { opacity: 0.45 !important; }
-/* Theatre lighthouse pulse — overrides both the day-mode hide rule and the
- * night-mode 0.45 dim so the beam visibly sweeps the scene during the event. */
+
+/* Theatre lighthouse pulse — overrides the phase-driven beam opacity so the
+ * sweep is visible even in broad daylight, which is the point of the event. */
 #lighthouse-beam.theatre-pulsing {
   opacity: 0.85 !important;
   transition: opacity 0.6s ease-in-out;
   filter: drop-shadow(0 0 18px #fff8c0) drop-shadow(0 0 36px #ffe44a);
 }
 
-@keyframes starTwinkle {
-  0%,100% { opacity: 0.95; }
-  50%     { opacity: 0.35; }
-}
 
 /* Auto-fit of non-1280x800 displays happens via --stage-scale (see :root and main.js) */

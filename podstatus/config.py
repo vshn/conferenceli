@@ -18,6 +18,16 @@ class Config:
         self.BLINKSTICK_GROUP_LED = self.get_env_int_var("BLINKSTICK_GROUP_LED", 3)
         self.CHAOS_BASIC_AUTH_USERNAME = self.get_env_var("CHAOS_BASIC_AUTH_USERNAME")
         self.CHAOS_BASIC_AUTH_PASSWORD = self.get_env_var("CHAOS_BASIC_AUTH_PASSWORD")
+        # Identifies the event the booth is at. Combined with the date, this is
+        # the seed for the generated harbour: same slug and same day always
+        # rebuild the identical world, a different conference gets a new one.
+        self.CONFERENCE_SLUG = self.get_env_var("CONFERENCE_SLUG", "conferenceli")
+        # Booth opening hours (HH:MM, local time). The kiosk compresses a full
+        # day/night cycle onto this window, so doors open at dawn and teardown
+        # happens at night. Anchoring to real time instead would mean dawn never
+        # occurs during a conference.
+        self.BOOTH_OPEN = self.get_env_var("BOOTH_OPEN", "09:00")
+        self.BOOTH_CLOSE = self.get_env_var("BOOTH_CLOSE", "18:00")
 
     def get_env_var(self, name, default=None):
         value = os.getenv(name, default)

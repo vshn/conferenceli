@@ -7,7 +7,10 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body>
+<body
+    data-seed="{{ world_seed | default('conferenceli-default') }}"
+    data-booth-open="{{ booth_open | default('09:00') }}"
+    data-booth-close="{{ booth_close | default('18:00') }}">
     {% block content %}{% endblock %}
     <script src="{{ url_for('static', filename='js/vendor/anime.min.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>

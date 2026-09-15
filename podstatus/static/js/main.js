@@ -3,6 +3,7 @@ import * as scene from './scene.js';
 import * as effects from './effects.js';
 import * as animations from './animations.js';
 import * as theatre from './theatre/eventBus.js';
+import * as director from './theatre/director.js';
 import './theatre/events/index.js';
 
 const STAGE_W = 1280;
@@ -28,6 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', fitStage);
   scene.init();
   animations.init();
+  // The Director writes the phase palette onto elements scene.init() just
+  // built, so it has to come after it — and before the first SSE arrives, so
+  // the scene is already at the right time of day when pods start appearing.
+  director.init();
   state.init();
   theatre.init();
 });
