@@ -23,7 +23,12 @@ html, body {
   height: var(--stage-h);
   background: linear-gradient(to bottom, #87ceeb 0%, #cfe9f5 60%, #b8d8e8 100%);
   overflow: hidden;
-  transform: scale(var(--stage-scale));
+  /* --shake-x is driven by the explosion screen-shake in animations.js. It is
+     composed here rather than animated as `transform` directly, because
+     anime.js rebuilds the whole transform property from the *inline* style and
+     would silently drop the stage scale (resetting the view to 1280x800). It
+     sits after scale() so the shake grows with the display. */
+  transform: scale(var(--stage-scale)) translateX(var(--shake-x, 0px));
   transform-origin: center;
 }
 #scene .layer,

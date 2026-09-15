@@ -58,18 +58,29 @@ function playExplode(g, pos, color, anime) {
   g.style.opacity = '0';
 
   if (!reducedMotion && anime) {
-    const scene = document.getElementById('scene');
-    anime({
-      targets: scene,
-      translateX: [
-        { value: -4, duration: 30 },
-        { value:  6, duration: 30 },
-        { value: -3, duration: 30 },
-        { value:  0, duration: 30 },
-      ],
-      easing: 'linear',
-    });
+    shakeScene(anime);
   }
+}
+
+// Screen shake. Animates a plain object and writes --shake-x, which #scene
+// composes into its transform. Never touch #scene's transform property here:
+// anime.js would rebuild it from the inline style only and drop the
+// stage scale set by fitStage(), pinning the view back to 1280x800.
+function shakeScene(anime) {
+  const scene = document.getElementById('scene');
+  if (!scene) return;
+  anime({
+    targets: { x: 0 },
+    x: [
+      { value: -4, duration: 30 },
+      { value:  6, duration: 30 },
+      { value: -3, duration: 30 },
+      { value:  0, duration: 30 },
+    ],
+    easing: 'linear',
+    update: a => scene.style.setProperty('--shake-x', a.animatables[0].target.x + 'px'),
+    complete: () => scene.style.setProperty('--shake-x', '0px'),
+  });
 }
 
 function playTopple(g, pos, color, anime) {
