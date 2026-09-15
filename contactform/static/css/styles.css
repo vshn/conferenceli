@@ -424,6 +424,9 @@ body::before {
 .actionbar {
   position: sticky;
   bottom: 0;
+  /* explicit, because the preceding sibling .ticket has a filter and so also
+     creates a stacking context — don't leave the order to paint rules */
+  z-index: 2;
   padding: 1rem var(--pad);
   padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   background-color: var(--paper);
@@ -478,7 +481,8 @@ body::before {
   background-color: #173962;
 }
 
-.btn[disabled] {
+.btn[disabled],
+.btn[aria-disabled="true"] {
   background-color: var(--ink-soft);
   cursor: progress;
   transform: none;
