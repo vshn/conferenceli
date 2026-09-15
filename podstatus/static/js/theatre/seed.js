@@ -143,7 +143,8 @@ function buildSkyline(rng, ridge, lighthouseX) {
 // kill counter pill and the QR card. A star behind an opaque card is a wasted
 // star (and, at dusk, a visible seam).
 const CHROME_BOXES = [
-  { x0: 16, y0: 48, x1: 292, y1: 154 },   // logo
+  // Logo plus the two-line booth identity label sitting underneath it.
+  { x0: 16, y0: 48, x1: 292, y1: 192 },
   { x0: 496, y0: 56, x1: 784, y1: 114 },  // kill counter
   { x0: 1088, y0: 48, x1: 1264, y1: 244 }, // QR card
 ];

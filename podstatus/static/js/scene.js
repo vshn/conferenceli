@@ -541,6 +541,17 @@ function startSeagulls() {
   }
 }
 
+// The conference line is operator-editable at runtime, so it's exported for
+// the Director to refresh when a `booth` update arrives — no reload needed for
+// a rename, only for a change that regenerates the world.
+export function setConferenceLabel(text) {
+  const el = document.querySelector('#harbour-name .hn-conference');
+  if (!el) return;
+  el.textContent = text || '';
+  // An empty conference name would otherwise leave a gap above the port name.
+  el.style.display = text ? '' : 'none';
+}
+
 // Waterline the reflections mirror about, and how much they're squashed to
 // suggest a viewing angle rather than a perfect mirror.
 const WATERLINE_Y = 724;
@@ -583,8 +594,10 @@ function removeShipReflection(name) {
 }
 
 function buildChrome() {
-  const nameEl = document.getElementById('harbour-name');
-  if (nameEl) nameEl.textContent = world.name;
+  setConferenceLabel(document.body?.dataset?.conference || '');
+
+  const portEl = document.querySelector('#harbour-name .hn-port');
+  if (portEl) portEl.textContent = world.name;
 
   const card = document.getElementById('qr-card');
   card.innerHTML = `

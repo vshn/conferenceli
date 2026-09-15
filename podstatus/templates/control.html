@@ -114,6 +114,49 @@
             letter-spacing: 0.08em;
         }
         .section-label:first-of-type { margin-top: 0.5rem; }
+        .booth-form label {
+            display: block;
+            font-size: 0.78rem;
+            color: #8b949e;
+            margin-bottom: 0.3rem;
+        }
+        .booth-form input[type="text"],
+        .booth-form input[type="time"] {
+            width: 100%;
+            padding: 0.8rem 0.9rem;
+            font-size: 1rem;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            background: #0d1117;
+            color: #e6edf3;
+            margin-bottom: 0.75rem;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .booth-form input:focus {
+            outline: none;
+            border-color: #1f6feb;
+            box-shadow: 0 0 0 3px rgba(31,111,235,0.3);
+        }
+        .booth-hours {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        .booth-hint {
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: #6e7681;
+            margin-bottom: 0.75rem;
+            word-break: break-all;
+        }
+        .booth-hint code {
+            color: #8b949e;
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 4px;
+            padding: 0.05rem 0.3rem;
+        }
         .theatre-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -174,6 +217,28 @@
             <form class="kc-form" onsubmit="event.preventDefault(); setKillCount(this.querySelector('button'));">
                 <input type="number" id="kc-input" min="0" step="1" value="0" inputmode="numeric">
                 <button type="submit" class="btn-primary">Set</button>
+            </form>
+
+            <div class="section-label">Booth setup</div>
+            <form class="booth-form" onsubmit="event.preventDefault(); saveBooth(this.querySelector('button'));">
+                <label for="booth-conference">Conference</label>
+                <input type="text" id="booth-conference" maxlength="60"
+                       value="{{ conference }}" placeholder="e.g. KubeCon London 2026">
+                <div class="booth-hours">
+                    <div>
+                        <label for="booth-open">Opens</label>
+                        <input type="time" id="booth-open" value="{{ booth_open }}">
+                    </div>
+                    <div>
+                        <label for="booth-close">Closes</label>
+                        <input type="time" id="booth-close" value="{{ booth_close }}">
+                    </div>
+                </div>
+                <div class="booth-hint">
+                    Harbour seed: <code>{{ world_seed }}</code><br>
+                    Renaming the conference builds a brand new harbour and reloads the kiosk.
+                </div>
+                <button type="submit" class="btn-primary">Save booth setup</button>
             </form>
 
             <div class="section-label">Director — time of day</div>
@@ -305,6 +370,43 @@
                 const data = await res.json();
                 status.className = 'status ' + (res.ok ? 'ok' : 'err');
                 status.textContent = data.message || 'Done';
+            } catch (e) {
+                status.className = 'status err';
+                status.textContent = 'Error: ' + e.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function saveBooth(btn) {
+            const status = document.getElementById('status');
+            const conference = document.getElementById('booth-conference').value.trim();
+            const open = document.getElementById('booth-open').value;
+            const close = document.getElementById('booth-close').value;
+            if (!conference) {
+                status.className = 'status err';
+                status.textContent = 'Conference name is required';
+                return;
+            }
+            btn.disabled = true;
+            status.className = 'status';
+            status.textContent = 'Saving...';
+            try {
+                const res = await fetch('/control/booth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ conference, open, close }),
+                });
+                if (res.status === 401) { window.location.reload(); return; }
+                const data = await res.json();
+                status.className = 'status ' + (res.ok ? 'ok' : 'err');
+                status.textContent = data.message || 'Done';
+                // The displayed seed is derived from the conference name, so it
+                // goes stale the moment the name changes.
+                if (res.ok && data.seed) {
+                    const code = document.querySelector('.booth-hint code');
+                    if (code) code.textContent = data.seed;
+                }
             } catch (e) {
                 status.className = 'status err';
                 status.textContent = 'Error: ' + e.message;

@@ -43,8 +43,19 @@ display_mode = {"value": "day"}
 # whenever the operator pushes a new value via /control/kill-count.
 kill_count_seed = {"value": 0}
 
+# Runtime-editable booth settings, seeded from the environment at startup. A
+# deployment that never opens /control behaves exactly as it did before; the
+# control UI writes here so an operator can retune at the booth without a
+# redeploy. In-memory only — a pod restart falls back to the configured values,
+# which is the right default for a machine that gets power-cycled daily.
+booth_settings = {
+    "conference": config.CONFERENCE_SLUG,
+    "open": config.BOOTH_OPEN,
+    "close": config.BOOTH_CLOSE,
+}
+
 # Operator override for the generated harbour. None means "derive from the
-# conference slug and today's date", which is the normal case; rerolling parks
+# conference name and today's date", which is the normal case; rerolling parks
 # an explicit seed here so every kiosk that reloads picks up the same world.
 world_seed_override = {"value": None}
 
@@ -52,7 +63,21 @@ world_seed_override = {"value": None}
 def current_world_seed():
     if world_seed_override["value"]:
         return world_seed_override["value"]
-    return f"{config.CONFERENCE_SLUG}-{date.today().isoformat()}"
+    return f"{booth_settings['conference']}-{date.today().isoformat()}"
+
+
+def parse_clock(value):
+    """Return HH:MM as minutes since midnight, or None if it isn't a clock time."""
+    parts = str(value).strip().split(":")
+    if len(parts) != 2:
+        return None
+    try:
+        hours, minutes = int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+    if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+        return None
+    return hours * 60 + minutes
 
 
 # Subscribers for the manual theatre-event SSE channel. Each open client gets
@@ -192,8 +217,9 @@ def create_app():
             "index.html",
             kill_count_seed=kill_count_seed["value"],
             world_seed=current_world_seed(),
-            booth_open=config.BOOTH_OPEN,
-            booth_close=config.BOOTH_CLOSE,
+            conference=booth_settings["conference"],
+            booth_open=booth_settings["open"],
+            booth_close=booth_settings["close"],
         )
 
     @app.route("/chaos")
@@ -283,6 +309,10 @@ def create_app():
             "control.html",
             authed=session.get("control_authed", False),
             error=error,
+            conference=booth_settings["conference"],
+            booth_open=booth_settings["open"],
+            booth_close=booth_settings["close"],
+            world_seed=current_world_seed(),
         )
 
     @app.route("/control/logout", methods=["POST"])
@@ -373,7 +403,7 @@ def create_app():
             payload["weather"] = weather or None
 
         if data.get("reroll") in (True, "true", "1", 1, "on"):
-            new_seed = f"{config.CONFERENCE_SLUG}-{random.randint(1000, 9999)}"
+            new_seed = f"{booth_settings['conference']}-{random.randint(1000, 9999)}"
             world_seed_override["value"] = new_seed
             payload["seed"] = new_seed
 
@@ -383,6 +413,78 @@ def create_app():
         broadcast_event("director", **payload)
         logging.info(f"Director control: {payload}")
         return jsonify({"message": f"Director: {payload}"}), 200
+
+    # Booth settings: which conference this is, and the hours the kiosk maps its
+    # day/night arc onto. Changing the hours is live — the Director recomputes
+    # its phase from the wall clock on the next tick. Changing the conference
+    # changes the seed, and the world is only generated at load, so the kiosk
+    # has to reload to pick it up.
+    @app.route("/control/booth", methods=["POST"])
+    @requires_control_session
+    def control_booth():
+        data = request.get_json(silent=True) or request.form
+        payload = {}
+        changed = []
+
+        conference = data.get("conference")
+        if conference is not None:
+            conference = str(conference).strip()
+            if not conference:
+                return jsonify({"message": "Conference name cannot be empty"}), 400
+            if len(conference) > 60:
+                return jsonify({"message": "Conference name is too long"}), 400
+            if conference != booth_settings["conference"]:
+                booth_settings["conference"] = conference
+                # A new conference means a new world. Drop any rerolled seed so
+                # the harbour is derived from the new name rather than staying
+                # pinned to the old one.
+                world_seed_override["value"] = None
+                payload["reloadClean"] = True
+                changed.append("conference")
+            payload["conference"] = conference
+
+        open_raw = data.get("open")
+        close_raw = data.get("close")
+        if open_raw is not None or close_raw is not None:
+            new_open = (
+                booth_settings["open"] if open_raw is None else str(open_raw).strip()
+            )
+            new_close = (
+                booth_settings["close"] if close_raw is None else str(close_raw).strip()
+            )
+            open_min = parse_clock(new_open)
+            close_min = parse_clock(new_close)
+            if open_min is None or close_min is None:
+                return jsonify({"message": "Times must be HH:MM"}), 400
+            if close_min <= open_min:
+                return jsonify({"message": "Closing time must be after opening"}), 400
+            if (
+                booth_settings["open"] != new_open
+                or booth_settings["close"] != new_close
+            ):
+                changed.append("hours")
+            booth_settings["open"] = new_open
+            booth_settings["close"] = new_close
+            payload["open"] = new_open
+            payload["close"] = new_close
+
+        if not payload:
+            return jsonify({"message": "Nothing to change"}), 400
+
+        broadcast_event("booth", **payload)
+        logging.info(
+            f"Booth settings updated ({', '.join(changed) or 'no change'}): {booth_settings}"
+        )
+        return (
+            jsonify(
+                {
+                    "message": f"Booth: {booth_settings['conference']} "
+                    f"{booth_settings['open']}-{booth_settings['close']}",
+                    "seed": current_world_seed(),
+                }
+            ),
+            200,
+        )
 
     @app.route("/stream_events")
     def stream_events():

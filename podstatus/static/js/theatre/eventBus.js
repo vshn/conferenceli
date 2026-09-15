@@ -201,6 +201,12 @@ function subscribeManualEvents() {
         director.applyControl(data);
         return;
       }
+      // Booth settings (conference name, opening hours) are likewise operator
+      // state rather than something to animate.
+      if (data.event === 'booth') {
+        director.applyBooth(data);
+        return;
+      }
       if (data.event) fire(data.event);
     } catch (err) {
       console.error('[theatre] stream_events parse', err, e.data);

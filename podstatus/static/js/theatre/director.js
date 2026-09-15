@@ -14,6 +14,7 @@
 import { world } from './seed.js';
 import * as state from '../state.js';
 import * as effects from '../effects.js';
+import { setConferenceLabel } from '../scene.js';
 
 const bus = new EventTarget();
 export const events = bus;
@@ -424,6 +425,35 @@ export function applyControl(data) {
     return;
   }
   console.log('[director] control', describe());
+  tick();
+}
+
+// Booth settings pushed from /control. Renaming the conference is live; a
+// change that regenerates the world (a new name means a new seed) asks for a
+// clean reload instead, dropping any ?seed= left behind by an earlier reroll
+// so the kiosk picks up the freshly derived world rather than a pinned one.
+export function applyBooth(data) {
+  if (!data || typeof data !== 'object') return;
+
+  if (typeof data.conference === 'string') {
+    setConferenceLabel(data.conference);
+  }
+
+  const open = parseClock(data.open, null);
+  const close = parseClock(data.close, null);
+  if (open !== null && close !== null && close > open) {
+    boothOpenMin = open;
+    boothCloseMin = close;
+    console.log(`[director] booth hours now ${data.open}-${data.close}`);
+  }
+
+  if (data.reloadClean) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('seed');
+    window.location.replace(url.toString());
+    return;
+  }
+
   tick();
 }
 

@@ -9,6 +9,7 @@
 </head>
 <body
     data-seed="{{ world_seed | default('conferenceli-default') }}"
+    data-conference="{{ conference | default('') }}"
     data-booth-open="{{ booth_open | default('09:00') }}"
     data-booth-close="{{ booth_close | default('18:00') }}">
     {% block content %}{% endblock %}

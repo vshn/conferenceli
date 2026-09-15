@@ -41,10 +41,20 @@ Two new concepts, each attaching to a seam that already exists.
 
 A deterministic PRNG plus a generated world spec.
 
-- **Source.** `config.py` holds `CONFERENCE_SLUG`; the server derives a per-day
-  seed as `<slug>-<day-index>` and renders it into `index.html` as a data
+- **Source.** `CONFERENCE_SLUG`, `BOOTH_OPEN` and `BOOTH_CLOSE` come from the
+  environment at startup but are held in a runtime `booth_settings` dict that
+  `/control` can edit, so an operator can retune at the booth without a
+  redeploy. In-memory only: a pod restart falls back to the configured values,
+  which is right for a machine that gets power-cycled daily. The server derives
+  the seed as `<conference>-<date>` and renders it into `index.html` as a data
   attribute. Stable within a day, different across days, reproducible forever.
   `?seed=` overrides for previewing.
+- **Changing the conference renames the world.** The seed changes, and the world
+  is only generated at load, so the kiosk reloads — dropping any `?seed=` left
+  by an earlier reroll so it picks up the newly derived world rather than a
+  pinned one. Changing only the hours is applied live.
+- **Both are shown on the kiosk**: the conference name and the generated
+  harbour name sit as a two-line label under the VSHN logo.
 - **PRNG.** FNV-1a string hash into mulberry32. No dependency.
 - **Governs world generation only.** Coastline, skyline, cloud and star layout,
   lighthouse placement, palette shift, weather timeline, micro-life cast, event

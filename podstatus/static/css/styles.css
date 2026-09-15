@@ -119,19 +119,32 @@ html, body {
   color: #222;
 }
 
-/* Harbour name — the seed's visible handle. Deliberately small and low
-   contrast: it's there so a returning visitor can say "last year was Port
-   Kestrel, this one's different", not to compete with the logo. */
+/* Booth identity, under the logo. Two lines: the conference the booth is at
+   (operator-set, so it's the more prominent of the two) and the generated
+   harbour's name — the seed's visible handle, there so a returning visitor can
+   say "last year was Port Kestrel, this one's different". Both stay small
+   enough not to compete with the logo above them. */
 #harbour-name {
   position: absolute;
   top: 152px; left: 24px;
-  font-size: 11px;
-  font-weight: 600;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
   pointer-events: none;
+}
+#harbour-name .hn-conference {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+}
+#harbour-name .hn-port {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Kill counter — easter egg, session-only */
