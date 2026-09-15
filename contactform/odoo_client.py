@@ -42,6 +42,12 @@ class OdooClient:
 
 
 def load_countries(odoo_client):
+    """Country choices grouped into real <optgroup>s.
+
+    WTForms renders a dict of choices as option groups, which beats the old
+    "---" separator row: the native mobile picker shows the group headers, so
+    the handful of countries we actually see at booths stay at the top.
+    """
     odoo_countries = odoo_client.search_read(
         "res.country", [("id", "!=", 0)], ["id", "name"], "name"
     )
@@ -55,9 +61,10 @@ def load_countries(odoo_client):
     preferred_sorted = sorted(preferred, key=lambda x: preferred_countries.index(x[1]))
     others_sorted = sorted(others, key=lambda x: x[1])
 
-    # Add a separator between preferred countries and others
-    separator = [("", "---", {"disabled": True})]
+    if not preferred_sorted:
+        return {"All countries": others_sorted}
 
-    sorted_countries = preferred_sorted + separator + others_sorted
-
-    return sorted_countries
+    return {
+        "Nearby": preferred_sorted,
+        "All countries": others_sorted,
+    }

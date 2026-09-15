@@ -60,3 +60,6 @@ deployment/apps/frpc/secret.yaml
 deployment/apps/healthcheck/secret.yaml
 kubeconfig
 tmp/
+
+label_*
+print-preview*

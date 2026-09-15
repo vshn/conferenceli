@@ -1,7 +1,59 @@
 {% extends 'base.html' %}
+{% import '_fields.html' as f %}
 
-{% from 'bootstrap5/form.html' import render_form %}
+{% block title %}{{ copy.headline }} — VSHN{% endblock %}
 
 {% block content %}
-{{ render_form(form) }}
+<form class="ticketform" method="post" action="">
+    {{ form.hidden_tag() }}
+
+    <div class="ticket">
+        {# The stub: what you get. #}
+        <section class="ticket__stub">
+            {% if campaign %}<p class="stub__eyebrow">{{ campaign }}</p>{% endif %}
+            <h1 class="stub__title">{{ copy.headline }}</h1>
+            <p class="stub__lede">{{ copy.lede }}</p>
+        </section>
+
+        {# Below the tear: what you give. #}
+        <section class="ticket__body">
+            {{ f.field(form.name,
+                       autocomplete='name',
+                       autocapitalize='words',
+                       autocorrect='off',
+                       enterkeyhint='next') }}
+
+            {{ f.field(form.email,
+                       inputmode='email',
+                       autocomplete='email',
+                       autocapitalize='off',
+                       autocorrect='off',
+                       spellcheck='false',
+                       enterkeyhint='next') }}
+
+            {{ f.field(form.company,
+                       autocomplete='organization',
+                       autocapitalize='words',
+                       enterkeyhint='next') }}
+
+            {{ f.field(form.job_position,
+                       autocomplete='organization-title',
+                       autocapitalize='words',
+                       enterkeyhint='next') }}
+
+            {{ f.field(form.phone,
+                       inputmode='tel',
+                       autocomplete='tel',
+                       enterkeyhint='next') }}
+
+            {{ f.select(form.country, autocomplete='country-name') }}
+
+            {{ f.textarea(form.notes, enterkeyhint='enter') }}
+        </section>
+    </div>
+
+    <div class="actionbar">
+        <button type="submit" class="btn" data-busy-label="{{ copy.cta_busy }}">{{ copy.cta }}</button>
+    </div>
+</form>
 {% endblock %}

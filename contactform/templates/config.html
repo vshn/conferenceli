@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% import '_fields.html' as f %}
+
+{% block title %}Booth settings — VSHN{% endblock %}
+
+{% block content %}
+<form method="post" action="">
+    {{ form.hidden_tag() }}
+
+    <div class="card">
+        <h1 class="card__title">Booth settings</h1>
+        <p class="card__lede">Applies to every submission from now on. Saved to the config file, so it survives a
+            restart.</p>
+
+        <div class="card__fields">
+            {{ f.field(form.campaign_name, autocapitalize='words', autocorrect='off',
+                       placeholder='Must match a campaign name in Odoo') }}
+            {{ f.field(form.label_header, autocapitalize='words') }}
+            {{ f.select(form.voucher_type) }}
+            {{ f.field(form.servala_voucher_code, autocapitalize='characters', autocorrect='off',
+                       spellcheck='false') }}
+
+            <div class="card__checks">
+                {{ f.checkbox(form.print_raffle_ticket) }}
+                {{ f.checkbox(form.odoo_leadcreation_enabled) }}
+            </div>
+        </div>
+
+        <div class="card__actions">
+            <button type="submit" class="btn btn--calm">{{ form.submit.label.text }}</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

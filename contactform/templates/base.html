@@ -1,36 +1,50 @@
-{% from 'bootstrap5/utils.html' import render_messages %}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     {% block head %}
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>VSHN Conference Booth Hit</title>
+    {# viewport-fit=cover is what makes env(safe-area-inset-*) work on notched phones.
+       No maximum-scale: pinch-zoom stays available. #}
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#2f6bb5">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block title %}VSHN at the booth{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
-    {{ bootstrap.load_css() }}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     {% endblock %}
 </head>
 
-<body class="bg-image">
-    <main class="container">
-        {{ render_messages(container=False, dismissible=True, dismiss_animate=True) }}
-        <img src="{{ url_for('static', filename='images/logo.png') }}" class="img-fluid mx-auto d-block w-50 m-5">
+<body>
+    <div class="page">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flashes" role="status" aria-live="polite">
+            {% for category, message in messages %}
+            <div class="flash flash--{{ category }}" data-autoclose>
+                <span class="flash__text">{{ message }}</span>
+                <button type="button" class="flash__close" data-flash-close aria-label="Dismiss">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <img class="brand" src="{{ url_for('static', filename='images/logo.png') }}" alt="VSHN" width="1024"
+            height="242">
+
         {% block content %}{% endblock %}
-    </main>
 
-    <footer class="text-center m-5">
-        {% block footer %}
-        <small> &copy;
-            <script>document.write(new Date().getFullYear())</script> <a href="https://www.vshn.ch">VSHN AG</a> - Made
-            with <a href="https://github.com/vshn/conferenceli/" target="_blank">conferenceli</a>
-        </small>
-        {% endblock %}
-    </footer>
+        <footer class="pagefoot">
+            {% block footer %}
+            &copy; {{ current_year }} <a href="https://www.vshn.ch">VSHN AG</a> &middot; made with
+            <a href="https://github.com/vshn/conferenceli/" target="_blank" rel="noopener">conferenceli</a>
+            {% endblock %}
+        </footer>
+    </div>
 
-    {{ bootstrap.load_js() }}
-    <script src="{{ url_for('static', filename='js/alert-autoclose.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 
 </html>

@@ -1,0 +1,43 @@
+{# ---------------------------------------------------------------------------
+   WTForms field rendering.
+
+   Replaces flask-bootstrap's render_form so we control the markup: mono caps
+   labels, an "optional" tag instead of a required asterisk, and whatever
+   mobile keyboard hints each field needs (passed through as kwargs).
+   --------------------------------------------------------------------------- #}
+
+{% macro field(f, css='') %}
+  {% set invalid = f.errors | length > 0 %}
+  {% set errid = f.id ~ '__error' %}
+  {% set classes = ('input ' ~ css) | trim %}
+  <div class="field{{ ' field--invalid' if invalid }}">
+    <div class="field__head">
+      {{ f.label(class_='field__label') }}
+      {%- if not f.flags.required %}<span class="field__tag">optional</span>{% endif -%}
+    </div>
+    {% if invalid %}
+      {{ f(class_=classes, aria_describedby=errid, aria_invalid='true', **kwargs) }}
+      <p class="field__error" id="{{ errid }}">{{ f.errors | join(' ') }}</p>
+    {% else %}
+      {{ f(class_=classes, **kwargs) }}
+    {% endif %}
+  </div>
+{% endmacro %}
+
+
+{% macro select(f) %}
+  {{ field(f, css='input--select', **kwargs) }}
+{% endmacro %}
+
+
+{% macro textarea(f) %}
+  {{ field(f, css='input--area', **kwargs) }}
+{% endmacro %}
+
+
+{% macro checkbox(f) %}
+  <div class="check">
+    {{ f(class_='check__box', **kwargs) }}
+    {{ f.label(class_='check__label') }}
+  </div>
+{% endmacro %}

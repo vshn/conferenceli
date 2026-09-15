@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import threading
+from datetime import date
 from urllib.parse import urlencode
 
 from flask import (
@@ -13,7 +14,6 @@ from flask import (
 from wtforms.validators import DataRequired, Email
 from wtforms.fields import *
 from flask_wtf import CSRFProtect, FlaskForm
-from flask_bootstrap import Bootstrap5
 from label_voucher import print_appuio_voucher, print_servala_voucher
 from label_raffle import print_raffle
 from nextcloud import upload_csv
@@ -34,12 +34,12 @@ from utils import *
 app = Flask(__name__)
 app.secret_key = config.FLASK_APP_SECRET_KEY
 csrf = CSRFProtect(app)
-bootstrap = Bootstrap5(app)
 
-# Basic styling
-app.config["BOOTSTRAP_BOOTSWATCH_THEME"] = "sandstone"
-app.config["BOOTSTRAP_BTN_SIZE"] = "lg"
-app.config["BOOTSTRAP_SERVE_LOCAL"] = True
+
+@app.context_processor
+def template_globals():
+    return {"current_year": date.today().year}
+
 
 # Initialize Odoo client and look up campaign and source IDs
 odoo_client = OdooClient(
@@ -65,28 +65,72 @@ printer_config = Configuration(
 )
 
 
+# Labels carry no "*": only name and email are required, so the template tags
+# the other five "optional" instead. Five quiet tags read as less work than
+# two asterisks read as more.
 class LeadForm(FlaskForm):
-    name = StringField("Name *", validators=[DataRequired()])
-    email = EmailField("E-Mail *", validators=[DataRequired(), Email()])
+    name = StringField("Name", validators=[DataRequired()])
+    email = EmailField("Email", validators=[DataRequired(), Email()])
     company = StringField("Company")
-    job_position = StringField("Job Position")
-    phone = TelField()
+    job_position = StringField("Job position")
+    phone = TelField("Phone")
     country = SelectField("Country", choices=load_countries(odoo_client))
-    notes = TextAreaField("What can VSHN help you with?", render_kw={"rows": 5})
+    notes = TextAreaField("How can VSHN help?", render_kw={"rows": 3})
     submit = SubmitField()
 
 
 class ConfigForm(FlaskForm):
-    campaign_name = StringField("Campaign Name *", validators=[DataRequired()])
-    label_header = StringField("Label Header *", validators=[DataRequired()])
+    campaign_name = StringField("Campaign name", validators=[DataRequired()])
+    label_header = StringField("Label header", validators=[DataRequired()])
     voucher_type = SelectField(
-        "Voucher Type",
+        "Voucher type",
         choices=[("none", "None"), ("appuio", "APPUiO"), ("servala", "Servala")],
     )
-    servala_voucher_code = StringField("Servala Voucher Code")
-    print_raffle_ticket = BooleanField("Print Raffle Ticket")
-    odoo_leadcreation_enabled = BooleanField("Odoo Lead Creation Enabled")
-    submit = SubmitField("Save Changes")
+    servala_voucher_code = StringField("Voucher code")
+    print_raffle_ticket = BooleanField("Print a raffle ticket")
+    odoo_leadcreation_enabled = BooleanField("Create leads in Odoo")
+    submit = SubmitField("Save changes")
+
+
+def booth_copy():
+    """Headline, lede and button label for whatever the booth prints today.
+
+    Read fresh on every request: /config changes these settings at runtime.
+    """
+    voucher = {"appuio": "APPUiO", "servala": "Servala"}.get(config.VOUCHER_TYPE)
+    raffle = config.PRINT_RAFFLE_TICKET
+
+    if raffle and voucher:
+        cta = "Print my ticket"
+        lede = (
+            f"Your raffle ticket and {voucher} voucher print right here at the "
+            "booth. Drop the ticket in the box to enter the draw."
+        )
+    elif raffle:
+        cta = "Print my ticket"
+        lede = (
+            "Your raffle ticket prints right here at the booth. Drop it in the "
+            "box to enter the draw."
+        )
+    elif voucher:
+        cta = "Print my voucher"
+        lede = (
+            f"Your {voucher} voucher prints right here at the booth — take it with you."
+        )
+    else:
+        cta = "Send my details"
+        lede = "We'll follow up after the event."
+
+    return {
+        "headline": (
+            "Enter the booth raffle."
+            if (raffle or voucher)
+            else "Leave your contact with us."
+        ),
+        "lede": lede,
+        "cta": cta,
+        "cta_busy": "Printing…" if (raffle or voucher) else "Sending…",
+    }
 
 
 def is_duplicate_submission(email, csv_file_path):
@@ -223,7 +267,12 @@ def index():
         )
         return redirect(f"https://go.vshn.ch/?{params}")
     else:
-        return render_template("form.html", form=form)
+        return render_template(
+            "form.html",
+            form=form,
+            campaign=config.CAMPAIGN_NAME,
+            copy=booth_copy(),
+        )
 
 
 @app.route("/config", methods=["GET", "POST"])
@@ -256,7 +305,7 @@ def config_endpoint():
 
         return redirect(url_for("config_endpoint"))
 
-    return render_template("form.html", form=form)
+    return render_template("config.html", form=form)
 
 
 if __name__ == "__main__":
